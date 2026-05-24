@@ -76,12 +76,20 @@ linear-recurrent baselines. The paper stakes three contributions. *C1
 recurrence trainable at scale, demonstrated on both NDM and a
 CMA-reshaped variant of the M2RNN update family (Lean predicate
 `IsMultiProgrammed`; witness `multiProgrammed_admits_m2rnn_and_ndm`).
-*C2 (mechanism):* given matrix state and temporal nonlinearity, the
-delta-correcting write is more expressive than the raw-write *at matched
-per-token FLOP class* (Lean: `ndm_m2rnn_flop_class_equiv`; NDM 0.79 vs
-best linear 0.36 on $S_5$ at 8 M parameter-matched scale; one-step formal
-separation `ndm_m2rnn_one_step_resource_separation_embeds`; realisation
-`NDMRealizesS5.ndm_realizes_s5_tracker`). *C3 (open program):* C2 implies
+*C2 (mechanism):* at matched per-token FLOP class, the delta-correcting
+write rule is the only architectural ingredient identified here that
+makes $S_5$- and $S_3$-style prefix-tracking *learnable in practice*
+across the post-Mamba family of matrix-state recurrent architectures.
+Three lines of evidence anchor this: (i) a one-step *representational*
+separation, formalised in Lean 4 (`NDMRealizesS5.ndm_realizes_s5_tracker`,
+`RecurrentResourceFormalism.ndm_m2rnn_flop_class_equiv`,
+`RecurrentResourceFormalism.ndm_m2rnn_one_step_resource_separation_embeds`);
+(ii) the structural *trainability* failure of raw-write matrix-state
+recurrence on $S_3$ at 0.31 with 8 M parameters — a regime where
+capacity is non-binding ($log_2 6 approx 2.6$ bits required against
+$approx 10^8$ bits available at fp16), so the residual is inductive
+bias, not budget; and (iii) NDM reaching 0.79 on $S_5$ at the same
+probe scale. *C3 (open program):* C2 implies
 a partial order over update rules indexed by one-step expressive power
 at matched per-token FLOP class, of which raw-write $<$ delta-correct is
 one entry; the *maximal element under matched FLOP class* is the
@@ -190,24 +198,37 @@ first two open up.
   the update rule (§5, §11).
 
 + *C2 — At matched per-token FLOP class, the delta-correcting write is
-  more expressive than the raw-write (mechanism).* Given matrix state
+  the only architectural ingredient identified here that makes $S_5$-
+  and $S_3$-style prefix-tracking learnable in practice across the
+  post-Mamba matrix-state RNN family (mechanism).* Given matrix state
   and temporal nonlinearity (both shared by the post-Mamba landscape),
   the *write rule* is what is left to vary. The two write rules
   considered — delta-correcting $S <- tanh(d S + k (v - S^T k)^T)$ (NDM)
   and raw-write $Z = tanh(H W + k v^T)$ (M2RNN) — are first shown to
   belong to the same per-token FLOP class
   (`RecurrentResourceFormalism.ndm_m2rnn_flop_class_equiv`), so that
-  "more expressive" cannot collapse into "spends more compute". Under
-  that matched-cost condition, NDM realises the $S_5$ prefix tracker
-  (`NDMRealizesS5.ndm_realizes_s5_tracker`) and empirically reaches
-  mean accuracy $bold(0.79)$ on $S_5$ at parameter-matched 8 M scale
-  against $0.36$ for FLA-GDN, $0.22$ for the CMA-tuned M2RNN raw-write
-  baseline, and $0.17$ for the M2RNN paper-default shape, with the
-  one-step formal separation
+  "more expressive" cannot collapse into "spends more compute". The
+  claim then rests on three lines of evidence which must be read with
+  care, because they speak to two different properties. (a) A *one-step
+  representational* separation, formalised in Lean: NDM realises the
+  $S_5$ prefix tracker
+  (`NDMRealizesS5.ndm_realizes_s5_tracker`), while
   `RecurrentResourceFormalism.ndm_m2rnn_one_step_resource_separation_embeds`
-  showing that no fixed-weight raw-write matrix RNN with row, column,
-  or cell forget gates can match NDM's mixed-key delta correction in
-  one step.
+  proves that no fixed-weight raw-write matrix RNN with row, column, or
+  cell forget gates can match NDM's mixed-key delta correction in one
+  recurrent step. These results bound what each update rule *can
+  represent* at fixed precision and width; they are not impossibility
+  results for the full M2RNN family under SGD. (b) An *empirical
+  trainability* gap: at 8 M parameter-matched scale, NDM reaches mean
+  accuracy $bold(0.79)$ on $S_5$ against $0.36$ for FLA-GDN, $0.22$ for
+  the CMA-tuned M2RNN raw-write baseline, and $0.17$ for the M2RNN
+  paper-default shape. (c) A *capacity-non-binding* control on $S_3$:
+  M2RNN-CMA stalls at $0.31$ on the six-element solvable group at the
+  same 8 M scale, where representing $S_3$ requires $log_2 6 approx 2.6$
+  bits per state against $approx 10^8$ bits available at fp16 — so the
+  failure is *trainability under the raw-write inductive bias*, not a
+  capacity ceiling. The Lean theorems anchor (a); the probes deliver
+  (b) and (c).
 
 + *C3 — An open research program: the partial order on RNN update rules
   under matched per-token FLOP class (stated, not delivered).* C2
@@ -280,14 +301,16 @@ NC#super[1]-complete witness.
 Two nonlinear matrix-state designs — NDM and M2RNN — therefore share the
 necessary preconditions (matrix state, nonlinearity on the state) and
 differ in one place: the write rule. The contribution staked in C2 (§1)
-is that the delta-correcting write earns expressivity *at matched
-per-token FLOP class*. The matched-cost condition is what makes the
-order over update rules meaningful — without it, "more expressive"
-collapses into "spends more compute". The Lean anchor for the matched
-cost is `RecurrentResourceFormalism.ndm_m2rnn_flop_class_equiv`, which
-shows the per-token FLOP count of an NDM head and an M2RNN head sit
-inside a common $c_1 d^2 + c_2 d$ envelope (§8 Theorem set D). Without
-that anchor, the partial order on update rules (C3) loses meaning.
+is that, *at matched per-token FLOP class*, the delta-correcting write
+is the only ingredient identified here that makes $S_5$/$S_3$-style
+prefix-tracking *learnable in practice* across the post-Mamba
+matrix-state family. The matched-cost condition is what makes the order
+over update rules meaningful — without it, "more expressive" collapses
+into "spends more compute". The Lean anchor for the matched cost is
+`RecurrentResourceFormalism.ndm_m2rnn_flop_class_equiv`, which shows the
+per-token FLOP count of an NDM head and an M2RNN head sit inside a
+common $c_1 d^2 + c_2 d$ envelope (§8 Theorem set D). Without that
+anchor, the partial order on update rules (C3) loses meaning.
 
 #heading(level: 2, numbering: none)[Matrix state]
 
@@ -524,9 +547,19 @@ is *not* the obstruction. This rules out a complexity-ceiling
 explanation. If raw-write could do clean prefix tracking even on
 solvable groups, M2RNN should clear $S_3$ — the smallest non-trivial
 permutation group, six elements, no NC#super[1] obstruction at all. It
-does not. The deficit is the write rule, not the complexity class. The
-empirical data lives in §7 (Table~@tab_s5); the one-step formal
-counterpart is `RecurrentResourceFormalism.ndm_m2rnn_one_step_resource_separation_embeds`
+does not. Nor is the failure a capacity ceiling: representing $S_3$
+requires only $log_2 6 approx 2.6$ bits per state, against the
+$approx 10^8$ bits of state available at 8 M parameters in fp16. With
+capacity non-binding by roughly eight orders of magnitude, the
+residual must be inductive bias — the raw-write update does not, under
+SGD at this scale, find a configuration that prefix-tracks $S_3$. The
+deficit is therefore a *trainability* failure of the raw-write update,
+not a representability impossibility (M2RNN's matrix state can in
+principle store an $S_3$ table) and not a complexity-class ceiling.
+The empirical data lives in §7 (Table~@tab_s5); the one-step *formal*
+counterpart — a per-step representational separation, not a global
+impossibility result —
+is `RecurrentResourceFormalism.ndm_m2rnn_one_step_resource_separation_embeds`
 (§8).
 
 State capacity is *not* the differentiator. Mamba2 @mamba2_2024 with
@@ -1025,11 +1058,22 @@ The mechanism interpretation. M2RNN underperforms both at the $S_5$
 training length (0.22 vs NDM 0.79) and on $S_3$ (0.31 vs NDM 1.00) at
 the same parameter count. Matrix state plus temporal nonlinearity *alone*
 — what NDM and M2RNN share — is not sufficient; the delta correction
-$v - S^T k$ is the load-bearing piece. The hybrid degradation result
-strengthens the same conclusion from the other side: linear-scan blocks
-cannot inherit state-tracking capability from neighbouring NDM blocks.
-The Lean formalisation of §8 turns this empirical reading into a
-one-step formal statement.
+$v - S^T k$ is the load-bearing piece. The $S_3$ probe is the cleaner
+control for reading this as a *trainability* claim. $S_3$ has six
+elements; storing its transition table requires $log_2 6 approx 2.6$
+bits of state and an 8 M-parameter fp16 model carries on the order of
+$10^8$ bits — capacity is non-binding by roughly eight orders of
+magnitude, and M2RNN's matrix state can in principle hold an $S_3$
+prefix-tracker. M2RNN's 0.31 is therefore evidence that SGD under the
+raw-write inductive bias *does not find* such a configuration at this
+scale, not that one fails to exist; the failure is empirical
+learnability under the raw-write rule, not representational
+impossibility. The hybrid degradation result strengthens the same
+conclusion from the other side: linear-scan blocks cannot inherit
+state-tracking capability from neighbouring NDM blocks. The Lean
+formalisation of §8 provides the *representational* counterpart — a
+per-step separation at fixed precision and width — not a global
+trainability claim about the M2RNN family.
 
 #heading(level: 2, numbering: none)[QA and reasoning panel at 1.27 B]
 
@@ -1341,14 +1385,19 @@ share a single FLOPs-per-bit slope to within a small constant factor —
 training compute economy is set by the HPO budget, not by the
 architectural family. On state-tracking probes, NDM separates from
 linear-recurrent and raw-write nonlinear matrix RNN baselines on the
-canonical $S_5$ word problem and on a five-of-six canonical sweep —
-the delta-correcting update is the load-bearing mechanism for
-state-tracking expressivity. A trusted Lean 4 core (no
-`sorry`/`admit`/`axiom`/`opaque`/`native_decide`) proves that an
-orthonormal-key NDM configuration realises the $S_5$ tracker, that no
+canonical $S_5$ word problem and on a five-of-six canonical sweep,
+including on $S_3$, where capacity is non-binding ($log_2 6 approx 2.6$
+bits required against $approx 10^8$ bits at 8 M parameters in fp16) and
+the raw-write 0.31 reads as a *trainability* failure of the update,
+not a representability ceiling — the delta-correcting update is the
+load-bearing mechanism for making prefix-tracking learnable in practice.
+A trusted Lean 4 core (no
+`sorry`/`admit`/`axiom`/`opaque`/`native_decide`) supplies the matching
+*representational* anchor at fixed precision and width: an
+orthonormal-key NDM configuration realises the $S_5$ tracker, no
 fixed-weight raw-write matrix RNN can match NDM's mixed-key delta
-correction in one step, and that the per-token FLOP class is the same
-for the two families.
+correction in one recurrent step, and the per-token FLOP class is the
+same for the two families.
 
 The concurrent M2RNN result @m2rnn2026 trained a pure-recurrent
 nonlinear matrix RNN at 410 M in parallel with this work; it is the
