@@ -27,6 +27,21 @@ jobs:
       - name: Unit smoke
         run: python -m pytest tests -m "not gpu"
 
+  typst:
+    name: Typst paper build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install typst
+        run: |
+          curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz \
+            | tar -xJ --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst
+          typst --version
+      - name: Build paper
+        run: bash paper/build.sh
+      - name: Verify PDF produced
+        run: test -f paper/main.pdf && echo "paper/main.pdf OK"
+
   lean:
     name: Lean trusted core
     runs-on: ubuntu-latest
