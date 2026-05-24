@@ -1078,4 +1078,111 @@ These are not capability theorems yet. They are hooks for the theorems we want:
   programs, making pure nonlinear recurrence trainable at scale.
 -/
 
+/-! ## Multi-Programming Predicate (Pillar 1 anchor) -/
+
+/-- CMA-ES-shaped M2RNN signature, instantiated from `m2rnnPure` with geometry
+drawn from the NDM CMA-best config in `docs/CMA_FLOP_RATE_FINDING.md` §4.1.
+
+**M2RNN is absent from the CMA sweep itself** — the driver registered both
+`m2rnn` and `m2rnn-paper` but the `cmaes_converge` benchmark predates the
+integration (see `docs/CMA_FLOP_RATE_FINDING.md` §2, "M2RNN is missing from
+this sweep"). We therefore use the NDM CMA-best geometry (depth 22, 70 heads
+per layer, 256 state scalars per head — matching NDM's CMA-found n_heads=70
+and n_state=16 giving 16×16=256 state scalars/head) as a CMA-representative
+proxy for M2RNN. The actual ~480M CMA-tuned M2RNN run is an open data gap
+noted in the CMA finding document; the predicate proof below is valid for this
+shape regardless, as it depends only on the head count and stack type, not the
+update rule. -/
+def m2rnnCMAShape : ArchitectureSignature :=
+  m2rnnPure 22 70 256
+
+/-!
+### Predicate definition
+
+`IsMultiProgrammed` captures the three structural features that constitute the
+"multi-programmed" execution model motivating Pillar 1:
+
+1. **Many independent heads per layer** (`headsPerLayer ≥ 2`). Each head
+   runs a logically independent recurrent program with its own state tile.
+   The threshold 2 is conservative; NDM-1.27B has 370 heads and M2RNN-CMA
+   has 70.
+
+2. **Per-head state tile** (`stateScalarsPerHead > 0`). Every head carries
+   its own non-trivial state buffer. Degenerate zero-state heads are
+   excluded.
+
+3. **Per-batch independence** (`pureRecurrentStack = true` and
+   `implementationMode = .sequentialManyProgram`). Each (layer, head, batch
+   item) triple runs as an isolated sequential program. No cross-batch state
+   coupling is possible because: (a) `pureRecurrentStack = true` excludes
+   attention or linear-scan layers that mix positions or batches via softmax
+   or scan reductions; (b) `implementationMode = .sequentialManyProgram`
+   further excludes `parallelScan` (which collapses many-program parallelism
+   into a single scan pass) and `.hybrid` (which may mix batch items through
+   the attention path).
+
+**Tightness discussion.**
+
+The predicate is *tight enough* to exclude scan/attention hybrids:
+- `gatedDeltaNet` and `mamba2SSM` have `implementationMode = .parallelScan`
+  and therefore fail condition (3b).
+- `m2rnnHybrid` has `pureRecurrentStack = false` and therefore fails
+  condition (3a).
+- Any pure-attention architecture would fail both (3a) and (3b) since its
+  `implementationMode` would be `.quadraticAttention`.
+
+The predicate is *loose enough* to accept any nonlinear matrix-state family
+that keeps the multi-head geometry. In particular:
+- NDM (delta-correcting write, input-dependent left transition) satisfies it.
+- M2RNN-pure (raw outer-product write, fixed learned right transition)
+  satisfies it.
+- Any future matrix-state nonlinear family with `pureRecurrentStack = true`,
+  `implementationMode = .sequentialManyProgram`, and at least 2 heads per
+  layer automatically satisfies it — independently of its update rule, write
+  mechanism, or memory semantics.
+
+The predicate does NOT constrain update-rule semantics. `temporalNonlinearity`,
+`writeRule`, `transitionSide`, `transitionControl`, `memorySemantics`, and
+`carryPlacement` are all unconstrained. Differences along those axes are the
+subject of Pillar 2 (the one-step resource separation); Pillar 1 is about
+scheduling geometry, not update semantics.
+-/
+
+/-- A recurrent stack is *multi-programmed* if it exposes many independent
+recurrent programs per layer, maintains non-trivial per-head state tiles, and
+runs each (layer, head, batch) triple independently with no cross-batch or
+cross-position state coupling. -/
+def IsMultiProgrammed (sig : ArchitectureSignature) : Prop :=
+  sig.headsPerLayer ≥ 2 ∧
+  sig.stateScalarsPerHead > 0 ∧
+  sig.pureRecurrentStack = true ∧
+  sig.implementationMode = .sequentialManyProgram
+
+/-- Both the 1.27B NDM/E88 signature and the CMA-ES-shaped M2RNN signature
+satisfy `IsMultiProgrammed`.
+
+This is the Lean anchor for Pillar 1: multi-programming is not NDM-specific.
+Two architectures with distinct update families (NDM's input-dependent left
+transition delta rule vs. M2RNN's fixed-learned right transition raw-write)
+both satisfy the predicate, confirming that it is about scheduling geometry
+rather than update semantics. -/
+theorem multiProgrammed_admits_m2rnn_and_ndm :
+    IsMultiProgrammed e88NDM_1p27B ∧ IsMultiProgrammed m2rnnCMAShape := by
+  exact ⟨⟨by decide, by decide, rfl, rfl⟩, ⟨by decide, by decide, rfl, rfl⟩⟩
+
+/-- A hybrid M2RNN stack — one that mixes in attention or scan layers — does not
+satisfy `IsMultiProgrammed`, regardless of layer count, head count, or state
+size.
+
+This negative witness confirms the predicate is non-vacuous: any signature
+with `pureRecurrentStack = false` (indicating the stack contains non-recurrent
+layers that can break per-batch independence) fails the multi-programming check.
+The specific witness here is the `m2rnnHybrid` family, which mixes M2RNN-style
+recurrent layers with attention or GDN layers. -/
+theorem not_multiProgrammed_m2rnnHybrid (layers nonlinearLayers heads state : Nat) :
+    ¬ IsMultiProgrammed (m2rnnHybrid layers nonlinearLayers heads state) := by
+  intro h
+  obtain ⟨_, _, h_pure, _⟩ := h
+  simp [m2rnnHybrid] at h_pure
+
 end RecurrentResourceFormalism
