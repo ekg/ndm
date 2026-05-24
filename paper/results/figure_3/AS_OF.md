@@ -1,0 +1,116 @@
+# Figure 3 Snapshot — As of 2026-05-24
+
+Training is **in progress**. All numbers are instantaneous snapshots from the
+live training logs; curves will be updated as training continues. Do not cite
+these results without re-running `smooth.py` to regenerate with current logs.
+
+---
+
+## Models and current state
+
+All runs use: dataset = Pile (pile.txt, p50k_base tokenizer), context = 2048 tokens,
+optimizer = schedule-free AdamW, bf16.
+
+| Model | Params | Step | Loss (nats) | Bits/byte† | Tokens seen | ~FLOPs‡ | GPU hours§ |
+|-------|--------|------|-------------|------------|-------------|---------|-----------|
+| E88/NDM | 1.273B | 1,035,000 | 2.6631 | 0.960 | 10.60B | 8.10 × 10¹⁹ | ~377 |
+| FLA-GDN | 1.352B | 1,370,800 | 2.6768 | 0.965 | 11.23B | 9.11 × 10¹⁹ | ~382 |
+| Mamba2 | 0.934B | 1,862,300 | 2.7073 | 0.977 | 15.26B | 8.55 × 10¹⁹ | ~382 |
+| M2RNN-CMA | 1.307B | 958,350 | 2.7662 | 0.998 | 9.81B | 7.70 × 10¹⁹ | ~343 |
+
+†  Bits/byte = (loss_nats / ln 2) / 4.0, where 4.0 bytes/token is estimated
+   for p50k_base on English Pile text. This estimate is approximate (±5%);
+   the true ratio depends on the exact text distribution.
+
+‡  Total FLOPs = 6 × N_params × B × T × step, where B = batch size, T = 2048.
+   This is the standard dense-op approximation (2N forward, 4N backward).
+   Recurrent state-update FLOPs in gated SSMs are not separately counted;
+   the formula may underestimate total compute for E88 and M2RNN variants.
+
+§  GPU hours are estimated from the training logs. For runs that span
+   multiple segments (original run + resumed run), the hours are reconstructed
+   by stitching log segments using tok/s integration for the older log format
+   (pre-2026-05-11 runs lacked elapsed_h fields) and elapsed_h for newer ones.
+   Numbers are approximate ±5%.
+
+---
+
+## Per-model caveats
+
+### E88/NDM
+- Architecture: Level E88 (Nonlinear Delta Memory / NDM paper name).
+  Config: dim=1664, depth=12, n_heads=370, n_state=32, expansion=1.0,
+  use_gate=1, gate_activation=silu, lr=8.678e-4.
+- Training started 2026-05-07. Original run diverged (NaN gradients) at step
+  ~247,250. A repair segment recovered from step 231,000; the postrepair run
+  resumed at step 247,500 on 2026-05-11 and has been running continuously since.
+- NaN event is visible as a spike in the raw loss curve ~77 h into training
+  (log scale). The 10K-step smoothed curve does not show it prominently.
+- Batch size: 5 (effective tokens/step = 10,240).
+
+### FLA-GDN
+- Architecture: Level fla-gdn (Flash Linear Attention with Gated Delta Net).
+  Config: dim=2688, depth=21, expansion=2, n_heads=44, lr=2.871e-3.
+- Training started 2026-05-07. Resumed from checkpoint at step 351,000 on
+  2026-05-11; continuous since.
+- Parameter count (1.352B) slightly exceeds the 1.27B target due to
+  CMA-ES dim/depth selection.
+- Batch size: 4 (effective tokens/step = 8,192).
+
+### Mamba2
+- Architecture: Level mamba2 (Mamba2 SSM).
+  Config: dim=2048, depth=32, expansion=3, mamba_d_state=160, lr=3.502e-4.
+- Training started 2026-05-07. Resumed from checkpoint at step 432,000 on
+  2026-05-11; continuous since.
+- Parameter count (934M) is below the 1.27B target; this is the CMA-ES
+  winner at this architecture family and scale.
+- Mamba2 achieves more steps/hour due to parallel scan efficiency (tok/s ≈ 11,250
+  vs ≈ 7,750–8,050 for the other models), hence the highest step count.
+- Batch size: 4 (effective tokens/step = 8,192).
+
+### M2RNN-CMA
+- Architecture: Level m2rnn (M2RNN with CMA-ES optimized geometry, "tied" config).
+  Config: dim=1920, depth=21, heads=370, n_state=16, lr=6.021e-4.
+- Training started 2026-05-09. Resumed with XMA (accelerated M2RNN) backend
+  at step 123,000 on 2026-05-11; continuous since.
+- Uses XMA kernels from the accelerated-model-architectures package.
+- Batch size: 5 (effective tokens/step = 10,240).
+- GPU hours (343h) reflect the M2RNN-CMA run's independent start date.
+
+---
+
+## Absent / excluded runs
+
+### M2RNN-paper
+- Config: dim=3072, depth=10, heads=759, n_state=16, lr=4.911e-4.
+- Ran 2026-05-09. Stopped at step 8,400, loss ≈ 11.5 (never converged).
+- Run was abandoned; no usable loss curve. Not included in Figure 3.
+- Log: `/tmp/pile_convergence_m2rnn/ctx2k/m2rnn_paper.log`
+
+---
+
+## FLOPs formula detail
+
+    FLOPs_per_step = 6 × N_params × batch_size × chunk_size
+    Total_FLOPs    = FLOPs_per_step × step
+
+    Interpretation of 6×:
+      Forward pass  ≈ 2N  (matrix multiplies dominate)
+      Backward pass ≈ 4N  (gradients w.r.t. weights + activations)
+    Total           = 6N
+
+    This is consistent with the Chinchilla / scaling-law literature convention.
+    SSM recurrent ops (O(N_state × d_model) per token) are absorbed into the
+    denominator of the 6N approximation for sufficiently large models; the error
+    is expected to be <10% for these configs.
+
+---
+
+## Smoothed loss columns in CSVs
+
+`smooth_5k`  — 5,000-step centered moving average of raw loss
+`smooth_10k` — 10,000-step centered moving average (used in Figure 3)
+`smooth_50k` — 50,000-step centered moving average
+
+The window is computed in log-entry index space. With log_every=50, a 10K-step
+window corresponds to ≈200 log entries per side.
