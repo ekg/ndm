@@ -10,7 +10,7 @@ if ! git -C "$SCRIPT_DIR" diff --quiet || ! git -C "$SCRIPT_DIR" diff --cached -
   COMMIT="${COMMIT}-dirty"
 fi
 
-OUTPUT="Garrison_2026_PNR-${COMMIT}.pdf"
+OUTPUT="Garrison_2026_Emender-${COMMIT}.pdf"
 
 typst compile main.typ "$OUTPUT"
 
