@@ -17,13 +17,13 @@ The dominant operating verdict in recurrent language modelling is
 that pure-nonlinear-in-time recurrence cannot reach foundation-model
 scale on competitive wallclock, because it forecloses the time-axis
 parallel scan that linear-recurrent variants depend on for GPU
-throughput. We test this verdict by training four pure-recurrent
-language models at 1.27 B parameters under per-architecture CMA-ES
-hyperparameter search: two with nonlinear time recurrence, *NDM*
-(delta-correcting update $S <- tanh(d S + k(v - S^T k)^T)$) and
-*M²RNN-CMA* (raw-write update $tanh(H W + k v^T)$); and two with
-linear time recurrence, *Mamba2* and *Gated DeltaNet* (GDN). All
-four land in the same loss-vs-wallclock band on The Pile, so
+throughput. We test this verdict by training three pure-recurrent
+language models at 1.27–1.35 B parameters under per-architecture
+CMA-ES hyperparameter search: two with nonlinear time recurrence,
+*NDM* (delta-correcting update $S <- tanh(d S + k(v - S^T k)^T)$)
+and *M²RNN-CMA* (raw-write update $tanh(H W + k v^T)$); and one
+with linear time recurrence, *Gated DeltaNet* (GDN). All three
+land in the same loss-vs-wallclock band on The Pile, so
 nonlinearity in time is not a cost for language modelling at this
 scale and the choice of recurrence linearity is washed out by
 per-architecture tuning. The systems contribution that makes this
@@ -35,7 +35,7 @@ throughput. Within the pure-nonlinear-recurrent class, NDM trains
 consistently ahead of M²RNN-CMA, and a one-step representability
 separation between the delta-correcting and raw-write update rules,
 formalised in Lean 4, is confirmed empirically on
-capacity-overparameterised state-tracking probes. The four 1.27 B
+capacity-overparameterised state-tracking probes. The three 1.27–1.35 B
 checkpoints, the per-architecture CMA-ES configurations, and the
 Triton multi-programming kernel will be released on HuggingFace at
 publication; the trusted Lean 4 core has no
@@ -43,18 +43,18 @@ sorry/admit/axiom/opaque/native_decide in the import closure.
 
 === ALTERNATE 2 — Tight ~110-word cold-lead variant ===
 
-We train four pure-recurrent 1.27 B language models on The Pile and
-find that nonlinearity in time is not a cost: two nonlinear-in-time
-recurrences (NDM, M²RNN-CMA) land in the same loss-vs-wallclock band
-as linear-recurrent baselines (Mamba2, Gated DeltaNet) under
-per-architecture CMA-ES. The field's operating verdict — that
-pure-nonlinear-in-time recurrence cannot reach this scale on
-competitive wallclock — is an artefact of parallelizing the time
-axis; width-axis multi-programming recovers throughput while the
-time loop stays serial. Within the nonlinear class, NDM trains
-consistently ahead of M²RNN-CMA, with the one-step representability
-separation formalised in Lean 4. Checkpoints, CMA-ES configs, and
-the Triton kernel released.
+We train three pure-recurrent 1.27–1.35 B language models on The
+Pile and find that nonlinearity in time is not a cost: two
+nonlinear-in-time recurrences (NDM, M²RNN-CMA) land in the same
+loss-vs-wallclock band as the linear-recurrent baseline Gated
+DeltaNet under per-architecture CMA-ES. The field's operating
+verdict — that pure-nonlinear-in-time recurrence cannot reach this
+scale on competitive wallclock — is an artefact of parallelizing
+the time axis; width-axis multi-programming recovers throughput
+while the time loop stays serial. Within the nonlinear class, NDM
+trains consistently ahead of M²RNN-CMA, with the one-step
+representability separation formalised in Lean 4. Checkpoints,
+CMA-ES configs, and the Triton kernel released.
 */
 
 #show: arkheion.with(
@@ -68,12 +68,12 @@ the Triton kernel released.
     ),
   ),
   abstract: [
-    We train four pure-recurrent language models at 1.27 B parameters
-    on The Pile and find that nonlinearity in time is not a cost: two
-    nonlinear-in-time recurrences — *NDM* (delta-correcting update
-    $S <- tanh(d S + k(v - S^T k)^T)$) and *M²RNN-CMA* (raw-write
-    update $tanh(H W + k v^T)$) — land in the same loss-vs-wallclock
-    band as the linear-recurrent baselines *Mamba2* and *Gated
+    We train three pure-recurrent language models at 1.27–1.35 B
+    parameters on The Pile and find that nonlinearity in time is not
+    a cost: two nonlinear-in-time recurrences — *NDM* (delta-correcting
+    update $S <- tanh(d S + k(v - S^T k)^T)$) and *M²RNN-CMA*
+    (raw-write update $tanh(H W + k v^T)$) — land in the same
+    loss-vs-wallclock band as the linear-recurrent baseline *Gated
     DeltaNet*, each tuned under per-architecture CMA-ES. This
     contradicts the field's operating verdict that
     pure-nonlinear-in-time recurrence cannot reach foundation-model
@@ -86,8 +86,8 @@ the Triton kernel released.
     of M²RNN-CMA; a one-step representability separation between
     the two update rules, formalised in Lean 4, is confirmed
     empirically on capacity-overparameterised state-tracking probes
-    ($S_5$, $S_3$). We will release the four 1.27 B checkpoints, the
-    per-architecture CMA-ES configurations, and the Triton
+    ($S_5$, $S_3$). We will release the three 1.27–1.35 B checkpoints,
+    the per-architecture CMA-ES configurations, and the Triton
     multi-programming kernel at publication; the trusted Lean 4 core has no
     `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in its import
     closure.
@@ -201,25 +201,26 @@ attention-free variant has not been demonstrated at LLM scale. This
 work takes that variant and puts it head-to-head with a delta-correct
 alternative under matched conditions.
 
-Four pure-recurrent 1.27 B language models are trained on The Pile
-@thepile2020: NDM (this work, with a delta-correct update rule
-$S <- tanh(d S + k(v - S^T k)^T)$), M²RNN-CMA (a CMA-reshaped
+Three pure-recurrent 1.27–1.35 B language models are trained on
+The Pile @thepile2020: NDM (this work, with a delta-correct update
+rule $S <- tanh(d S + k(v - S^T k)^T)$) and M²RNN-CMA (a CMA-reshaped
 pure-recurrent variant of the M²RNN architecture, with a raw-write
-update $tanh(H W + k v^T)$), and the linear-recurrent baselines Mamba2
-@mamba2_2024 and Gated DeltaNet (GDN @gated_deltanet2024). All four
-received per-architecture CMA-ES @cmaes2003 hyperparameter and shape
-search, with range repositioning when limits were hit, so every
-architecture was evaluated under its best-effort configuration at
-matched search effort. All four land in the same loss-vs-wallclock band on
-The Pile. *Nonlinearity in time is not a cost.* The sharper status-quo
+update $tanh(H W + k v^T)$) as the two pure-nonlinear-recurrent
+instances, plus Gated DeltaNet (GDN @gated_deltanet2024) as the
+linear-recurrent baseline. All three received per-architecture
+CMA-ES @cmaes2003 hyperparameter and shape search, with range
+repositioning when limits were hit, so every architecture was
+evaluated under its best-effort configuration at matched search
+effort. All three land in the same loss-vs-wallclock band on The
+Pile. *Nonlinearity in time is not a cost.* The sharper status-quo
 verdict — that pure-nonlinear-recurrent language models cannot reach
 this regime without a time-axis parallelisation trick or attention
-hybridisation — is, at minimum at 1.27 B on The Pile under matched
-wallclock, not supported by the data. The class of pure-nonlinear-
-recurrent (PNR) language models is therefore open for exploration; to
-our knowledge, NDM and M²RNN-CMA are the first foundation-model-class
-*pure-recurrent, time-serial, attention-free* PNR language models
-trained at this scale.
+hybridisation — is, at minimum at 1.27–1.35 B on The Pile under
+matched wallclock, not supported by the data. The class of
+pure-nonlinear-recurrent (PNR) language models is therefore open
+for exploration; to our knowledge, NDM and M²RNN-CMA are the first
+foundation-model-class *pure-recurrent, time-serial,
+attention-free* PNR language models trained at this scale.
 
 Within the pure-nonlinear-recurrent class, NDM trains consistently
 ahead of M²RNN-CMA across the sampled wallclock window. The paper
@@ -229,7 +230,7 @@ multi-programming systems contribution; §5 presents the 1.27 B
 wallclock racer with the per-architecture CMA-ES protocol; §6 reports
 the 8 M expressivity probes with the capacity-non-binding justification;
 §7 the Lean 4 formalisation; §8 related work; §9 limitations; §10
-conclusion; §11 future work. The four 1.27 B checkpoints, the
+conclusion; §11 future work. The three 1.27–1.35 B checkpoints, the
 per-architecture CMA-ES configurations, and the Triton multi-programming
 kernel will be released on HuggingFace at publication.
 
@@ -649,10 +650,10 @@ size is untested.
 
 #heading(level: 2, numbering: none)[Setup]
 
-We train four pure-recurrent language models at the 1.27 B parameter
-band on The Pile @thepile2020 with a 2048-token context window, byte-pair
-encoding (p50k_base, 50,257-vocab), schedule-free AdamW
-@schedulefree2024, and bf16 mixed precision. The four models and their
+We train three pure-recurrent language models at the 1.27–1.35 B
+parameter band on The Pile @thepile2020 with a 2048-token context window,
+byte-pair encoding (p50k_base, 50,257-vocab), schedule-free AdamW
+@schedulefree2024, and bf16 mixed precision. The three models and their
 CMA-tuned shapes are:
 
 #align(center)[#table(
@@ -664,14 +665,13 @@ CMA-tuned shapes are:
     [*Model*], [*Params*], [*Batch*], [*Shape*],
   ),
   [NDM], [1.273 B], [5], [dim=1664, depth=12, H=370, N=32],
-  [GDN], [1.352 B], [4], [dim=2688, depth=21, exp=2, H=44],
-  [Mamba2], [0.934 B], [4], [dim=2048, depth=32, exp=3, d_state=160],
   [M²RNN-CMA], [1.307 B], [5], [dim=1920, depth=21, H=370, N=16],
+  [GDN], [1.352 B], [4], [dim=2688, depth=21, exp=2, H=44],
 )]
 
 #heading(level: 2, numbering: none)[Per-architecture CMA-ES protocol (fairness anchor)]
 
-All four 1.27 B architectures (NDM, M²RNN-CMA, Mamba2, and Gated
+All three 1.27–1.35 B architectures (NDM, M²RNN-CMA, and Gated
 DeltaNet) received *per-architecture* CMA-ES @cmaes2003 hyperparameter
 and shape search. Each architecture was searched independently over the
 same six-knob configuration space (width, depth, head count, state
@@ -680,7 +680,7 @@ width, output gating, learning rate) under matched candidate budget
 rule of mean training nats over a fixed late-training window). When
 CMA-ES exploration drifted onto the edge of a configured hyperparameter
 range, the range was repositioned and search continued; this was done
-consistently for all four architectures. No architecture received any
+consistently for all three architectures. No architecture received any
 probe-specific tuning beyond what CMA-ES discovered for the
 language-modelling loss. The per-family CMA-ES winner shapes shown in
 the table above are used unchanged in the §6 expressivity probes and
@@ -697,19 +697,19 @@ rule under matched best-effort search, not as a residue of differential
 HPO investment.
 
 Under this protocol the wallclock training curves separate cleanly: the
-delta-correcting PNR instance (NDM) and the two linear-recurrent
-baselines (Mamba2 and GDN) track the same loss-vs-wallclock band and
-trade leadership through training (@fig_lm_racers), while the raw-write
-PNR instance (M²RNN-CMA) trails throughout the sampled window. The §7
-mechanism reading is what isolates the source of this within-PNR
-separation: matrix state plus temporal nonlinearity is competitive with
+delta-correcting PNR instance (NDM) and the linear-recurrent baseline
+(GDN) track the same loss-vs-wallclock band and trade leadership
+through training (@fig_lm_racers), while the raw-write PNR instance
+(M²RNN-CMA) trails throughout the sampled window. The §7 mechanism
+reading is what isolates the source of this within-PNR separation:
+matrix state plus temporal nonlinearity is competitive with
 frontier-class linear recurrence under matched per-architecture tuning,
 and the *delta-correcting* write is what places NDM at parity with
-Mamba2 and GDN, its absence what places M²RNN-CMA behind.
+GDN, its absence what places M²RNN-CMA behind.
 
 #heading(level: 2, numbering: none)[Gradient conditioning is a third recipe property]
 
-A fifth run, *M²RNN-paper* (the paper-default shape from @m2rnn2026
+A fourth run, *M²RNN-paper* (the paper-default shape from @m2rnn2026
 re-implemented at 1.27 B with dim=3072, depth=10, H=759, N=16), was
 attempted under the same training setup and *diverged* at step 8,400
 with gradient norm $approx 4.2 times 10^7$. The CMA-tuned reshape
@@ -748,42 +748,42 @@ family to train at 1.27 B.
 #figure(
   image("results/figure_2/figure_2_draft.png", width: 95%),
   caption: [
-    *Loss versus wallclock for the four 1.27 B-parameter pure-recurrent
-    racers, as of 2026-05-24.* Schedule-free AdamW on The Pile with a
-    2048-token context. Curves are 10K-step centred moving averages of
-    raw training loss (nats per token). Mamba2 is at 0.934 B parameters;
-    NDM at 1.273 B; GDN at 1.352 B; M²RNN-CMA at 1.307 B. Training
+    *Loss versus wallclock for the three 1.27–1.35 B-parameter
+    pure-recurrent racers, as of 2026-05-24.* Schedule-free AdamW on
+    The Pile with a 2048-token context. Curves are 10K-step centred
+    moving averages of raw training loss (nats per token). NDM is at
+    1.273 B parameters; M²RNN-CMA at 1.307 B; GDN at 1.352 B. Training
     is in progress at the time of writing; this snapshot covers
     approximately 8–15 GPU-days per model. *Panel A:* full curve on
     log-wallclock from h = 1. *Panel B:* tail (h ≥ 40) on linear
-    wallclock. NDM, GDN, and Mamba2 share a single loss band through the
-    bulk of training, with leadership trading between them at the
-    fractional-nat scale; GDN and NDM are nearly co-linear. M²RNN-CMA
-    has higher loss than the other three across the sampled window.
-    The paper-shape M²RNN baseline (not shown) diverged at step 8,400.
-    Color convention used throughout the paper: NDM = blue,
-    GDN = orange, Mamba2 = green, M²RNN-CMA = red.
+    wallclock. NDM and GDN share a single loss band through the bulk
+    of training, with leadership trading between them at the
+    fractional-nat scale; the two curves are nearly co-linear.
+    M²RNN-CMA has higher loss than the other two across the sampled
+    window. The paper-shape M²RNN baseline (not shown) diverged at
+    step 8,400. Color convention used throughout the paper: NDM =
+    blue, GDN = orange, M²RNN-CMA = red.
   ],
 ) <fig_lm_racers>
 
-Across the shared wall-clock window, NDM, GDN, and Mamba2 occupy the
-same band: leadership trades between them through training, and at no
-sampled point do the three separate by more than a small fraction of a
-nat. Final raw losses at the snapshot are approximately 2.66 (NDM,
-step 1,035,000), 2.68 (GDN, step 1,371,000), 2.71 (Mamba2,
-step 1,862,000), and 2.77 (M²RNN-CMA, step 958,000). The within-PNR
-comparison is qualitatively different: M²RNN-CMA trails NDM across the
-entire sampled window under the matched per-architecture CMA-ES protocol
-described above. The two robust empirical claims supported by
-@fig_lm_racers are therefore (i) *(class-level)* the pure-nonlinear-
-recurrent class lands in the same loss-vs-wallclock band as the
-frontier-class linear-recurrent baselines, contradicting the
-long-standing assumption that pure nonlinear recurrence is impractical
-at scale; and (ii) *(within-class)* within the pure-nonlinear-recurrent
-class the delta-correcting update rule is consistently ahead of the
-raw-write update rule under matched per-architecture CMA-ES, isolating
-the update rule as the within-PNR differentiator. Source: smoothed CSVs
-and snapshot table under `paper/results/figure_2/` (`AS_OF.md`).
+Across the shared wall-clock window, NDM and GDN occupy the same band:
+leadership trades between them through training, and at no sampled
+point do the two separate by more than a small fraction of a nat.
+Final raw losses at the snapshot are approximately 2.66 (NDM,
+step 1,035,000), 2.68 (GDN, step 1,371,000), and 2.77 (M²RNN-CMA,
+step 958,000). The within-PNR comparison is qualitatively different:
+M²RNN-CMA trails NDM across the entire sampled window under the
+matched per-architecture CMA-ES protocol described above. The two
+robust empirical claims supported by @fig_lm_racers are therefore
+(i) *(class-level)* the pure-nonlinear-recurrent class lands in the
+same loss-vs-wallclock band as the frontier-class linear-recurrent
+baseline, contradicting the long-standing assumption that pure
+nonlinear recurrence is impractical at scale; and (ii) *(within-class)*
+within the pure-nonlinear-recurrent class the delta-correcting update
+rule is consistently ahead of the raw-write update rule under matched
+per-architecture CMA-ES, isolating the update rule as the within-PNR
+differentiator. Source: smoothed CSVs and snapshot table under
+`paper/results/figure_2/` (`AS_OF.md`).
 
 // ── 6. Expressivity Results ───────────────────────────────────────────────────
 = Expressivity Results <sec:expressivity>
@@ -1100,23 +1100,23 @@ different timescales of expressivity, both indicting the write rule.
 
 #heading(level: 2, numbering: none)[QA and reasoning panel at 1.27 B: parity-rate evidence]
 
-For capability beyond loss numbers we evaluate the four 1.27 B-band
+For capability beyond loss numbers we evaluate the three 1.27–1.35 B-band
 models on a 300-item multi-choice continuation harness sampled from
 ARC-C/E @arc2018, HellaSwag @hellaswag2019, SciQ @sciq2017, OpenBookQA
 @openbookqa2018, and BoolQ @boolq2019. At the latest snapshot, NDM
-reaches 0.367 (random ~0.29), GDN 0.380, M²RNN-CMA 0.367, Mamba2 0.360;
-all four sit within one standard error of one another
+reaches 0.367 (random ~0.29), GDN 0.380, and M²RNN-CMA 0.367; all
+three sit within one standard error of one another
 ($"SE" approx 6$ pp at 50 items per task). On a separate reasoning
 panel (BIG-Bench Hard @bbh2022, ReCLor @reclor2020, FOLIO @folio2022),
-all four families collapse on multi-step object tracking
+all three families collapse on multi-step object tracking
 (`tracking_shuffled_objects_7_objects` at 0.10–0.13, near-random) and
-on FOLIO/ReCLor (near-random for all four), with GDN modestly leading
+on FOLIO/ReCLor (near-random for all three), with GDN modestly leading
 on formal fallacies and web-of-lies. NDM's overall reasoning accuracy
-(0.319) is within one standard error of M²RNN (0.336) and Mamba2
-(0.324). None of the four architectures has crossed the threshold
-where reasoning benchmarks differentiate, which is consistent with all
-four being under-trained equivalently at this stage of training. Read
-as evidence for the class-level claim of §1, the panel says that
+(0.319) is within one standard error of M²RNN (0.336). None of the
+three architectures has crossed the threshold where reasoning
+benchmarks differentiate, which is consistent with all three being
+under-trained equivalently at this stage of training. Read as evidence
+for the class-level claim of §1, the panel says that
 pure-nonlinear-recurrent NDM acquires standard benchmark capability at
 the same rate as the linear-recurrent and raw-write nonlinear baselines
 at this training budget; the QA result is a qualitative check that NDM
@@ -1411,13 +1411,13 @@ for OLMo-Hybrid), and the answers do not contradict.
 
 #heading(level: 2, numbering: none)[Snapshot status of the 1.27 B racer]
 
-The four 1.27 B-band language-model training runs were in progress at the
-time of submission. The loss-vs-wallclock racer (@fig_lm_racers)
-is a snapshot as of 2026-05-24; the curves will continue and the
-final-loss numbers may shift. The qualitative claim (four families in
-the same wallclock loss band) is robust to the remaining training; the
-quantitative ordering should be re-read at the published-checkpoint
-stage.
+The three 1.27–1.35 B-band language-model training runs were in
+progress at the time of submission. The loss-vs-wallclock racer
+(@fig_lm_racers) is a snapshot as of 2026-05-24; the curves will
+continue and the final-loss numbers may shift. The qualitative claim
+(three families in the same wallclock loss band) is robust to the
+remaining training; the quantitative ordering should be re-read at
+the published-checkpoint stage.
 
 #heading(level: 2, numbering: none)[Open architectural choices]
 
@@ -1433,16 +1433,16 @@ keeps the conservative settings.
 = Conclusion <sec:conclusion>
 
 This paper demonstrates that pure-nonlinear-recurrent language models
-can be trained at the 1.27 B-parameter band into the same loss-vs-
-wallclock band as frontier-class linear-recurrent baselines. Four pure-
-recurrent architectures (NDM and M²RNN-CMA, nonlinear in time; Mamba2
-and Gated DeltaNet, linear in time) receive per-architecture
-CMA-ES hyperparameter search and converge into a shared wallclock band
-on The Pile. *Nonlinearity in time is not a cost* for language
-modelling at this scale; the choice of recurrence linearity is washed
-out by per-architecture tuning. To our knowledge, NDM and M²RNN-CMA
-are the first foundation-model-class pure-nonlinear-recurrent language
-models trained at 1.27 B parameters. M²RNN (Mishra et al. @m2rnn2026)
+can be trained at the 1.27–1.35 B-parameter band into the same loss-vs-
+wallclock band as a frontier-class linear-recurrent baseline. Three
+pure-recurrent architectures (NDM and M²RNN-CMA, nonlinear in time;
+Gated DeltaNet, linear in time) receive per-architecture CMA-ES
+hyperparameter search and converge into a shared wallclock band on
+The Pile. *Nonlinearity in time is not a cost* for language modelling
+at this scale; the choice of recurrence linearity is washed out by
+per-architecture tuning. To our knowledge, NDM and M²RNN-CMA are the
+first foundation-model-class pure-nonlinear-recurrent language models
+trained at 1.27–1.35 B parameters. M²RNN (Mishra et al. @m2rnn2026)
 is the closest prior art and demonstrates nonlinear matrix-state
 recurrence at 7 B MoE scale in *hybrid form*; the pure-recurrent
 variant trained here, M²RNN-CMA, is the head-to-head datapoint inside
@@ -1477,11 +1477,10 @@ update solves $S_3$ to ceiling and reaches 0.79 on the non-solvable
 $S_5$ probe. The trusted Lean 4 core has no
 `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in the import closure.
 
-*Release.* The four 1.27 B model checkpoints (NDM, M²RNN-CMA, the
-Mamba2 baseline, and the Gated DeltaNet baseline) will be released on
-HuggingFace at publication, alongside the per-architecture CMA-ES
-configurations, the training protocol, and the Triton multi-programming
-kernel source.
+*Release.* The three 1.27–1.35 B model checkpoints (NDM, M²RNN-CMA,
+and the Gated DeltaNet baseline) will be released on HuggingFace at
+publication, alongside the per-architecture CMA-ES configurations, the
+training protocol, and the Triton multi-programming kernel source.
 
 = Future Work <sec:future_work>
 

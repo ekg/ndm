@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render the normalized Figure 2 from the existing CSVs.
 
-Reads E88_NDM.csv, FLA_GDN.csv, Mamba2.csv, M2RNN_CMA.csv (produced by smooth.py
+Reads E88_NDM.csv, FLA_GDN.csv, M2RNN_CMA.csv (produced by smooth.py
 when run on the host with /tmp/pile_convergence_* logs present), and writes
 figure_2_draft.png.
 
@@ -10,7 +10,6 @@ Normalized presentation conventions (shared with cma_flop_rate/plot.py):
   y-axis : training loss in nats per token (10K-step centred moving average)
   colors : NDM = #1f77b4 (blue)
            FLA-GDN = #ff7f0e (orange)
-           Mamba2 = #2ca02c (green)
            M2RNN-CMA = #d62728 (red) — emphasises strict-above (worse) position
 """
 from __future__ import annotations
@@ -28,25 +27,22 @@ OUT = Path(__file__).parent
 COLORS = {
     "NDM":       "#1f77b4",
     "FLA-GDN":   "#ff7f0e",
-    "Mamba2":    "#2ca02c",
     "M2RNN-CMA": "#d62728",
 }
 
 # Plot in an order that draws M2RNN-CMA on top so its strict-above position
 # is unambiguous when curves get close near the data-entropy floor.
-ORDER = ["FLA-GDN", "NDM", "Mamba2", "M2RNN-CMA"]
+ORDER = ["FLA-GDN", "NDM", "M2RNN-CMA"]
 
 FILES = {
     "NDM":       OUT / "E88_NDM.csv",
     "FLA-GDN":   OUT / "FLA_GDN.csv",
-    "Mamba2":    OUT / "Mamba2.csv",
     "M2RNN-CMA": OUT / "M2RNN_CMA.csv",
 }
 
 PARAMS = {
     "NDM":       "1.27 B",
     "FLA-GDN":   "1.35 B",
-    "Mamba2":    "0.93 B",
     "M2RNN-CMA": "1.31 B",
 }
 
@@ -125,7 +121,7 @@ def main():
     axB.set_ylim(2.63, 3.05)
     axB.set_xlabel("Wall-clock training hours", fontsize=11)
     axB.set_ylabel("Training loss (nats / token)", fontsize=11)
-    axB.set_title("B. Tail (h ≥ 40) — strict wall-clock order is M²RNN-CMA > Mamba2 > NDM", fontsize=10)
+    axB.set_title("B. Tail (h ≥ 40) — strict wall-clock order is M²RNN-CMA > GDN ≈ NDM", fontsize=10)
     axB.grid(True, which="both", alpha=0.3)
 
     out = OUT / "figure_2_draft.png"
