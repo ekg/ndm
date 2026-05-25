@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 OUT = Path(__file__).parent
 
-# Shared with paper/results/figure_3/plot_normalized.py — same color = same
+# Shared with paper/results/figure_2/plot_normalized.py — same color = same
 # architecture everywhere in the paper.
 LABELS = {
     "e88":     "NDM (E88) — nonlinear delta, matrix state",

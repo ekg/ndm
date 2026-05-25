@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Render the normalized Figure 3 from the existing CSVs.
+"""Render the normalized Figure 2 from the existing CSVs.
 
 Reads E88_NDM.csv, FLA_GDN.csv, Mamba2.csv, M2RNN_CMA.csv (produced by smooth.py
 when run on the host with /tmp/pile_convergence_* logs present), and writes
-figure_3_draft.png.
+figure_2_draft.png.
 
 Normalized presentation conventions (shared with cma_flop_rate/plot.py):
   x-axis : wall-clock training hours (log scale)
@@ -133,7 +133,7 @@ def main():
         "(Pile, ctx=2048, schedule-free AdamW, bf16, as of 2026-05-24)",
         fontsize=11, y=1.00,
     )
-    out = OUT / "figure_3_draft.png"
+    out = OUT / "figure_2_draft.png"
     fig.tight_layout()
     fig.savefig(out, dpi=160, bbox_inches="tight")
     plt.close(fig)

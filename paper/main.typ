@@ -7,6 +7,56 @@
 
 #import "@preview/arkheion:0.1.2": arkheion, arkheion-appendices
 
+// ALTERNATE ABSTRACTS — kept for A/B reference. The active (rendered)
+// abstract is the result-first version below (passed to arkheion).
+//
+/*
+=== ALTERNATE 1 — Verdict-rebuttal opener (v11 version) ===
+
+The dominant operating verdict in recurrent language modelling is
+that pure-nonlinear-in-time recurrence cannot reach foundation-model
+scale on competitive wallclock, because it forecloses the time-axis
+parallel scan that linear-recurrent variants depend on for GPU
+throughput. We test this verdict by training four pure-recurrent
+language models at 1.27 B parameters under per-architecture CMA-ES
+hyperparameter search: two with nonlinear time recurrence, *NDM*
+(delta-correcting update $S <- tanh(d S + k(v - S^T k)^T)$) and
+*M²RNN-CMA* (raw-write update $tanh(H W + k v^T)$); and two with
+linear time recurrence, *Mamba2* and *Gated DeltaNet* (GDN). All
+four land in the same loss-vs-wallclock band on The Pile, so
+nonlinearity in time is not a cost for language modelling at this
+scale and the choice of recurrence linearity is washed out by
+per-architecture tuning. The systems contribution that makes this
+possible is *multi-programming*, a width-axis parallelisation that
+replicates the recurrent computation across many independent heads
+while keeping the time loop serial inside each head; this replaces
+the time-axis linearisation that linear recurrences exploit for
+throughput. Within the pure-nonlinear-recurrent class, NDM trains
+consistently ahead of M²RNN-CMA, and a one-step representability
+separation between the delta-correcting and raw-write update rules,
+formalised in Lean 4, is confirmed empirically on
+capacity-overparameterised state-tracking probes. The four 1.27 B
+checkpoints, the per-architecture CMA-ES configurations, and the
+Triton multi-programming kernel will be released on HuggingFace at
+publication; the trusted Lean 4 core has no
+sorry/admit/axiom/opaque/native_decide in the import closure.
+
+=== ALTERNATE 2 — Tight ~110-word cold-lead variant ===
+
+We train four pure-recurrent 1.27 B language models on The Pile and
+find that nonlinearity in time is not a cost: two nonlinear-in-time
+recurrences (NDM, M²RNN-CMA) land in the same loss-vs-wallclock band
+as linear-recurrent baselines (Mamba2, Gated DeltaNet) under
+per-architecture CMA-ES. The field's operating verdict — that
+pure-nonlinear-in-time recurrence cannot reach this scale on
+competitive wallclock — is an artefact of parallelizing the time
+axis; width-axis multi-programming recovers throughput while the
+time loop stays serial. Within the nonlinear class, NDM trains
+consistently ahead of M²RNN-CMA, with the one-step representability
+separation formalised in Lean 4. Checkpoints, CMA-ES configs, and
+the Triton kernel released.
+*/
+
 #show: arkheion.with(
   title: "Pure Nonlinear Recurrent Language Models",
   authors: (
@@ -18,33 +68,28 @@
     ),
   ),
   abstract: [
-    The dominant operating verdict in recurrent language modelling is
-    that pure-nonlinear-in-time recurrence cannot reach foundation-model
-    scale on competitive wallclock, because it forecloses the time-axis
-    parallel scan that linear-recurrent variants depend on for GPU
-    throughput. We test this verdict by training four pure-recurrent
-    language models at 1.27 B parameters under per-architecture CMA-ES
-    hyperparameter search: two with nonlinear time recurrence, *NDM*
-    (delta-correcting update $S <- tanh(d S + k(v - S^T k)^T)$) and
-    *M²RNN-CMA* (raw-write update $tanh(H W + k v^T)$); and two with
-    linear time recurrence, *Mamba2* and *Gated DeltaNet* (GDN). All
-    four land in the same loss-vs-wallclock band on The Pile, so
-    nonlinearity in time is not a cost for language modelling at this
-    scale and the choice of recurrence linearity is washed out by
-    per-architecture tuning. The systems contribution that makes this
-    possible is *multi-programming*, a width-axis parallelisation that
-    replicates the recurrent computation across many independent heads
-    while keeping the time loop serial inside each head; this replaces
-    the time-axis linearisation that linear recurrences exploit for
-    throughput. Within the pure-nonlinear-recurrent class, NDM trains
-    consistently ahead of M²RNN-CMA, and a one-step representability
-    separation between the delta-correcting and raw-write update rules,
-    formalised in Lean 4, is confirmed empirically on
-    capacity-overparameterised state-tracking probes. The four 1.27 B
-    checkpoints, the per-architecture CMA-ES configurations, and the
-    Triton multi-programming kernel will be released on HuggingFace at
-    publication; the trusted Lean 4 core has no
-    `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in the import
+    We train four pure-recurrent language models at 1.27 B parameters
+    on The Pile and find that nonlinearity in time is not a cost: two
+    nonlinear-in-time recurrences — *NDM* (delta-correcting update
+    $S <- tanh(d S + k(v - S^T k)^T)$) and *M²RNN-CMA* (raw-write
+    update $tanh(H W + k v^T)$) — land in the same loss-vs-wallclock
+    band as the linear-recurrent baselines *Mamba2* and *Gated
+    DeltaNet*, each tuned under per-architecture CMA-ES. This
+    contradicts the field's operating verdict that
+    pure-nonlinear-in-time recurrence cannot reach foundation-model
+    scale on competitive wallclock, because it forecloses the
+    time-axis parallel scan. The verdict is an artefact of that
+    axis: we recover throughput on the width axis instead, via
+    *multi-programming* — replicating the recurrence across many
+    independent heads while the time loop stays serial inside each.
+    Within the pure-nonlinear class, NDM trains consistently ahead
+    of M²RNN-CMA; a one-step representability separation between
+    the two update rules, formalised in Lean 4, is confirmed
+    empirically on capacity-overparameterised state-tracking probes
+    ($S_5$, $S_3$). We release the four 1.27 B checkpoints, the
+    per-architecture CMA-ES configurations, and the Triton
+    multi-programming kernel; the trusted Lean 4 core has no
+    `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in its import
     closure.
   ],
   keywords: (
@@ -105,24 +150,32 @@ variants: state-space models such as Mamba and Mamba2 @mamba2024
 for time-axis parallelism, because nonlinear-in-time recurrence resisted
 the parallel scan that makes GPU throughput tractable at modern scale.
 
-The field's current operating verdict, plainly stated, is that you
-cannot do sequential models at scale. The reasoning runs: nonlinear-in-
-time recurrence blocks the parallel scan that linear-recurrent variants
-depend on for time-axis GPU throughput, so pure-nonlinear-recurrent
-language models cannot reach foundation-model scale on competitive
-wallclock. This was originally a parallelisation choice, accepting
-linearisation in the time axis to recover GPU-friendly throughput, but
-the field has come to treat it as a computational verdict about what
-sequential recurrence can or cannot be. This work shows that verdict
-is an illusion, in the same sense that Merrill, Petty and Sabharwal
-@merrill2024transformers showed the apparent state-tracking expressivity
-of state-space models was an artefact of analysis: there, an apparent
-expressivity property of SSMs turned out to be an artefact of how the
-class was analysed; here, an apparent computational bound on
-pure-nonlinear-recurrent scaling turns out to be an artefact of the
-axis the field chose to parallelise over. The bound that has been read
-as fundamental is in fact contingent on parallelising the time axis.
-Parallelise a different axis and the bound vanishes.
+The field's current operating verdict is more specific than
+"sequential models cannot scale". Recent work has already softened the
+broad form: ParaRNN @pararnn2025 trains nonlinear-recurrent (LSTM and
+GRU) language models at 7 B by parallelising the time loop itself via
+Newton iteration on a block-bidiagonal Jacobian, and M²RNN @m2rnn2026
+(Mishra, Tan, Stoica, Gonzalez, Dao 2026) trains nonlinear matrix-state
+recurrence at 7 B MoE in *hybrid form* (nonlinear-recurrent layers
+interleaved with attention layers). The operating verdict that
+remains is sharper: *pure nonlinear recurrence cannot reach competitive
+wallclock at foundation-model scale without either a time-axis
+parallelisation trick or hybridisation with attention.* The
+nonlinearity is treated as the obstruction; time-axis parallelisation
+(Newton iteration, parallel scan, associative reduction) or attention
+hybridisation is treated as the unavoidable concession. Either route
+preserves the modern throughput frontier; the pure-recurrent,
+time-serial, attention-free alternative has been treated as off the
+table. This work shows that sharper verdict is an illusion, in the
+same sense that Merrill, Petty and Sabharwal @merrill2024transformers
+showed the apparent state-tracking expressivity of state-space models
+was an artefact of analysis: there, an apparent expressivity property
+of SSMs turned out to be an artefact of how the class was analysed;
+here, an apparent computational bound on pure-nonlinear-recurrent
+scaling turns out to be an artefact of the axis the field chose to
+parallelise over. The bound that has been read as fundamental is in
+fact contingent on parallelising the time axis. Parallelise a
+different axis and the bound vanishes.
 
 That assumption has not been directly tested under modern width-axis
 optimisation. Width-axis parallelism, which we call *multi-programming*,
@@ -134,13 +187,19 @@ linear-recurrent models, but it is not necessary for scaling; the width
 axis is an alternative the field has under-explored for
 pure-nonlinear-recurrent models specifically.
 
-The closest prior art is M²RNN @m2rnn2026 (Mishra, Tan, Stoica,
-Gonzalez, Dao 2026), which demonstrates that nonlinear matrix-state
-recurrence trains at 7 B MoE scale in *hybrid form*: nonlinear
-matrix-state recurrent layers interleaved with attention layers. The
-pure-recurrent variant, with no attention bolt-ons, has not been
-demonstrated at LLM scale. This work takes that variant and puts it
-head-to-head with a delta-correct alternative under matched conditions.
+The closest prior art is the pair of recent attempts that scale
+nonlinear recurrence by different concessions. M²RNN @m2rnn2026
+demonstrates that nonlinear matrix-state recurrence trains at 7 B MoE
+scale in *hybrid form* (nonlinear-recurrent layers interleaved with
+attention layers); ParaRNN @pararnn2025 demonstrates that
+nonlinear-recurrent LSTM and GRU train at 7 B by parallelising the time
+loop via Newton iteration on a block-bidiagonal Jacobian. Both define
+the boundary of the sharper verdict above: each scales pure
+nonlinearity at LLM scale by either hybridising with attention or
+parallelising the time axis. The pure-recurrent, time-serial,
+attention-free variant has not been demonstrated at LLM scale. This
+work takes that variant and puts it head-to-head with a delta-correct
+alternative under matched conditions.
 
 Four pure-recurrent 1.27 B language models are trained on The Pile
 @thepile2020: NDM (this work, with a delta-correct update rule
@@ -152,13 +211,15 @@ received per-architecture CMA-ES @cmaes2003 hyperparameter and shape
 search, with range repositioning when limits were hit, so every
 architecture was evaluated under its best-effort configuration at
 matched search effort. All four land in the same loss-vs-wallclock band on
-The Pile. *Nonlinearity in time is not a cost.* The status-quo verdict
-that pure-nonlinear-recurrent language models cannot reach this regime
-is, at minimum at 1.27 B on The Pile under matched wallclock, not
-supported by the data. The class of pure-nonlinear-recurrent (PNR)
-language models is therefore open for exploration; to our knowledge,
-NDM and M²RNN-CMA are the first foundation-model-class PNR LMs trained
-at this scale.
+The Pile. *Nonlinearity in time is not a cost.* The sharper status-quo
+verdict — that pure-nonlinear-recurrent language models cannot reach
+this regime without a time-axis parallelisation trick or attention
+hybridisation — is, at minimum at 1.27 B on The Pile under matched
+wallclock, not supported by the data. The class of pure-nonlinear-
+recurrent (PNR) language models is therefore open for exploration; to
+our knowledge, NDM and M²RNN-CMA are the first foundation-model-class
+*pure-recurrent, time-serial, attention-free* PNR language models
+trained at this scale.
 
 Within the pure-nonlinear-recurrent class, NDM trains consistently
 ahead of M²RNN-CMA across the sampled wallclock window. The paper
@@ -685,7 +746,7 @@ family to train at 1.27 B.
 #heading(level: 2, numbering: none)[Loss-vs-wallclock racer]
 
 #figure(
-  image("results/figure_3/figure_3_draft.png", width: 95%),
+  image("results/figure_2/figure_2_draft.png", width: 95%),
   caption: [
     *Loss versus wallclock for the four 1.27 B-parameter pure-recurrent
     racers, as of 2026-05-24.* Schedule-free AdamW on The Pile with a
@@ -722,7 +783,7 @@ at scale; and (ii) *(within-class)* within the pure-nonlinear-recurrent
 class the delta-correcting update rule is consistently ahead of the
 raw-write update rule under matched per-architecture CMA-ES, isolating
 the update rule as the within-PNR differentiator. Source: smoothed CSVs
-and snapshot table under `paper/results/figure_3/` (`AS_OF.md`).
+and snapshot table under `paper/results/figure_2/` (`AS_OF.md`).
 
 // ── 6. Expressivity Results ───────────────────────────────────────────────────
 = Expressivity Results <sec:expressivity>

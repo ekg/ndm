@@ -641,11 +641,11 @@ subject to a conclusive `lake build`.
    model family but the in-repo S3/S5 numbers cover only E88, FLA-GDN,
    M2RNN, M2RNN-paper (`paper/notes_reconciliation.md` C5 + missing
    evidence #3). Adding Mamba2 strengthens the §6 separation claim.
-6. **1.27B wallclock racer plots.** Figure 3 data lives in `~/elman/`
+6. **1.27B wallclock racer plots.** Figure 2 data lives in `~/elman/`
    per `paper/notes_reconciliation.md` C4 + out-of-repo dependency
    table (rows 1–4). Need smoothed loss-vs-wallclock for E88, FLA-GDN,
    Mamba2, M2RNN-CMA at frozen checkpoint hashes, written into
-   `paper/results/figure_3/`.
+   `paper/results/figure_2/`.
 7. **Triton vs CUDA throughput microbenchmark.** Source:
    `paper/notes_reconciliation.md` missing-evidence #5. Affects Figure 4
    Panel C.

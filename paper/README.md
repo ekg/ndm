@@ -62,9 +62,9 @@ paper/
 
 ## Pending figure data
 
-Figure 3 (1.27B language-model loss racers) needs artifacts from `~/elman/`.
-Stage frozen checkpoint loss curves into `paper/results/figure_3/` and
-replace `figures/figure_3_placeholder.svg` with the real plot.
+Figure 2 (1.27B language-model loss racers) needs artifacts from `~/elman/`.
+Stage frozen checkpoint loss curves into `paper/results/figure_2/` and
+replace `figures/figure_2_placeholder.svg` with the real plot.
 
 See `paper/OUTLINE.md` §5.2 for the full list of pending experimental closures.
 

@@ -397,7 +397,7 @@ def make_figure(all_rows):
     ax.grid(True, which="both", alpha=0.3)
     ax.set_ylim(bottom=0.85)
 
-    out = OUT_DIR / "figure_3_draft.png"
+    out = OUT_DIR / "figure_2_draft.png"
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)
