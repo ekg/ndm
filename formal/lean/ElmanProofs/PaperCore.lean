@@ -47,7 +47,7 @@ paper-space claims:
   value family, `λ = 1`) realize the S5 transition memory: the NDM delta core
   loads an orthonormal table whose readout, decoded and composed with any
   input state, reproduces `s5TransitionMemory.read` on every `(state, generator)`
-  pair (`NDMRealizesS5.ndm_realizes_s5_tracker`).
+  pair (`NDMRealizesS5.emender_realizes_s5_tracker`).
 
 Use `scripts/check_paper_core.sh` to reject unfinished proof holes, explicit
 assumptions, opaque declarations, and kernel-bypassing computation in this

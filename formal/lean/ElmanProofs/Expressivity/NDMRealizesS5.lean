@@ -14,7 +14,7 @@ fixes a state dimension `d = 12`, a constructive orthonormal key family indexed
 by `S5Tracker.AdjacentGenerator`, a one-hot value family also indexed by the
 generators, and a unit decay scalar `λ = 1`.
 
-The main theorem `ndm_realizes_s5_tracker` shows that the NDM-style delta
+The main theorem `emender_realizes_s5_tracker` shows that the NDM-style delta
 memory (the pre-`tanh` core of the NDM update equation), when loaded with this
 orthonormal key/value table, reads back each generator's value through a fixed
 linear readout query, decodes the value to the corresponding adjacent
@@ -35,8 +35,8 @@ regular-language witness."*
   occupy positions 0–3, leaving slack for state-tile widening.
 * `genIndex : AdjacentGenerator → Fin D` — injective placement of each
   adjacent generator at a distinct position.
-* `ndmKey g i := if i = genIndex g then 1 else 0` — one-hot orthonormal key.
-* `ndmValue g i := if i = genIndex g then 1 else 0` — one-hot value vector.
+* `emenderKey g i := if i = genIndex g then 1 else 0` — one-hot orthonormal key.
+* `emenderValue g i := if i = genIndex g then 1 else 0` — one-hot value vector.
 * `decode : ValueVec D → S5Tracker.State` — recover the transposition from
   the value vector (defined via classical equality on real vectors; the four
   expected inputs decode to the four adjacent transpositions).
@@ -82,23 +82,23 @@ theorem genIndex_injective : Function.Injective genIndex := by
   cases a <;> cases b <;> first | rfl | (simp [genIndex] at h)
 
 /-- Constructive orthonormal key family: one-hot at `genIndex g`. -/
-def ndmKey (g : AdjacentGenerator) : KeyVec D :=
+def emenderKey (g : AdjacentGenerator) : KeyVec D :=
   fun i => if i = genIndex g then (1 : Real) else 0
 
 /-- Constructive value family: one-hot at `genIndex g`. Sharing the encoding
-with the key family means the loaded memory's readout at `ndmKey g` recovers
-exactly `ndmValue g`, which uniquely identifies the generator. -/
-def ndmValue (g : AdjacentGenerator) : ValueVec D :=
+with the key family means the loaded memory's readout at `emenderKey g` recovers
+exactly `emenderValue g`, which uniquely identifies the generator. -/
+def emenderValue (g : AdjacentGenerator) : ValueVec D :=
   fun i => if i = genIndex g then (1 : Real) else 0
 
 /-! ## Inner-Product Properties of the Key Family -/
 
 /-- Inner product of two one-hot generator keys: `1` if the same generator,
 otherwise `0`. -/
-theorem keyDot_ndmKey (g g' : AdjacentGenerator) :
-    keyDot (ndmKey g) (ndmKey g') =
+theorem keyDot_emenderKey (g g' : AdjacentGenerator) :
+    keyDot (emenderKey g) (emenderKey g') =
       if g = g' then (1 : Real) else 0 := by
-  unfold keyDot ndmKey
+  unfold keyDot emenderKey
   by_cases hgg : g = g'
   · subst hgg
     simp only [if_true]
@@ -161,16 +161,16 @@ theorem generatorToFin4_fin4ToGenerator (i : Fin 4) :
   | ⟨n + 4, h⟩ => exact absurd h (by omega)
 
 /-- `Fin 4`-indexed orthonormal key family. -/
-def ndmKeyFin (i : Fin 4) : KeyVec D := ndmKey (fin4ToGenerator i)
+def emenderKeyFin (i : Fin 4) : KeyVec D := emenderKey (fin4ToGenerator i)
 
 /-- `Fin 4`-indexed value family. -/
-def ndmValueFin (i : Fin 4) : ValueVec D := ndmValue (fin4ToGenerator i)
+def emenderValueFin (i : Fin 4) : ValueVec D := emenderValue (fin4ToGenerator i)
 
 /-- The `Fin 4`-indexed key family is orthonormal. -/
-theorem ndmKeyFin_orthonormal : OrthonormalKeys ndmKeyFin := by
+theorem emenderKeyFin_orthonormal : OrthonormalKeys emenderKeyFin := by
   intro i j
-  unfold ndmKeyFin
-  rw [keyDot_ndmKey]
+  unfold emenderKeyFin
+  rw [keyDot_emenderKey]
   by_cases hij : i = j
   · subst hij; simp
   · have hne : fin4ToGenerator i ≠ fin4ToGenerator j := by
@@ -183,106 +183,106 @@ theorem ndmKeyFin_orthonormal : OrthonormalKeys ndmKeyFin := by
 
 /-! ## Decoder -/
 
-/-- Reading the value vector `ndmValue g` at index `genIndex g` is `1`. -/
-theorem ndmValue_at_genIndex_self (g : AdjacentGenerator) :
-    ndmValue g (genIndex g) = 1 := by
-  simp [ndmValue]
+/-- Reading the value vector `emenderValue g` at index `genIndex g` is `1`. -/
+theorem emenderValue_at_genIndex_self (g : AdjacentGenerator) :
+    emenderValue g (genIndex g) = 1 := by
+  simp [emenderValue]
 
-/-- Reading the value vector `ndmValue g'` at index `genIndex g` is `0` when
+/-- Reading the value vector `emenderValue g'` at index `genIndex g` is `0` when
 the generators differ. -/
-theorem ndmValue_at_genIndex_other
+theorem emenderValue_at_genIndex_other
     (g g' : AdjacentGenerator) (h : g ≠ g') :
-    ndmValue g' (genIndex g) = 0 := by
-  unfold ndmValue
+    emenderValue g' (genIndex g) = 0 := by
+  unfold emenderValue
   have hne : genIndex g ≠ genIndex g' := fun heq => h (genIndex_injective heq)
   simp [hne]
 
 /-- The value family is injective: distinct generators produce distinct value
 vectors. -/
-theorem ndmValue_injective : Function.Injective ndmValue := by
+theorem emenderValue_injective : Function.Injective emenderValue := by
   intro a b hab
   by_contra hne
   have h := congrFun hab (genIndex a)
-  rw [ndmValue_at_genIndex_self, ndmValue_at_genIndex_other a b hne] at h
+  rw [emenderValue_at_genIndex_self, emenderValue_at_genIndex_other a b hne] at h
   exact one_ne_zero h
 
 /-- Decode a value vector back to its adjacent transposition. For the four
-expected inputs `ndmValue g`, this returns `transposition g`; on any other
+expected inputs `emenderValue g`, this returns `transposition g`; on any other
 vector the decoder returns the identity permutation.
 
 This is the "decoder" half of the linear readout pipeline. The decoder is
 noncomputable because it tests real-valued vector equality, which uses
 classical logic. The downstream theorems only rely on its behavior on the
-four `ndmValue g` inputs. -/
+four `emenderValue g` inputs. -/
 noncomputable def decode (vec : ValueVec D) : S5Tracker.State :=
-  letI : Decidable (vec = ndmValue .s01) := Classical.propDecidable _
-  letI : Decidable (vec = ndmValue .s12) := Classical.propDecidable _
-  letI : Decidable (vec = ndmValue .s23) := Classical.propDecidable _
-  letI : Decidable (vec = ndmValue .s34) := Classical.propDecidable _
-  if vec = ndmValue .s01 then transposition .s01
-  else if vec = ndmValue .s12 then transposition .s12
-  else if vec = ndmValue .s23 then transposition .s23
-  else if vec = ndmValue .s34 then transposition .s34
+  letI : Decidable (vec = emenderValue .s01) := Classical.propDecidable _
+  letI : Decidable (vec = emenderValue .s12) := Classical.propDecidable _
+  letI : Decidable (vec = emenderValue .s23) := Classical.propDecidable _
+  letI : Decidable (vec = emenderValue .s34) := Classical.propDecidable _
+  if vec = emenderValue .s01 then transposition .s01
+  else if vec = emenderValue .s12 then transposition .s12
+  else if vec = emenderValue .s23 then transposition .s23
+  else if vec = emenderValue .s34 then transposition .s34
   else (1 : S5Tracker.State)
 
-private theorem ndmValue_s01_ne_s12 : ndmValue .s01 ≠ ndmValue .s12 := by
+private theorem emenderValue_s01_ne_s12 : emenderValue .s01 ≠ emenderValue .s12 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s01_ne_s23 : ndmValue .s01 ≠ ndmValue .s23 := by
+private theorem emenderValue_s01_ne_s23 : emenderValue .s01 ≠ emenderValue .s23 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s01_ne_s34 : ndmValue .s01 ≠ ndmValue .s34 := by
+private theorem emenderValue_s01_ne_s34 : emenderValue .s01 ≠ emenderValue .s34 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s12_ne_s01 : ndmValue .s12 ≠ ndmValue .s01 :=
-  fun h => ndmValue_s01_ne_s12 h.symm
+private theorem emenderValue_s12_ne_s01 : emenderValue .s12 ≠ emenderValue .s01 :=
+  fun h => emenderValue_s01_ne_s12 h.symm
 
-private theorem ndmValue_s12_ne_s23 : ndmValue .s12 ≠ ndmValue .s23 := by
+private theorem emenderValue_s12_ne_s23 : emenderValue .s12 ≠ emenderValue .s23 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s12_ne_s34 : ndmValue .s12 ≠ ndmValue .s34 := by
+private theorem emenderValue_s12_ne_s34 : emenderValue .s12 ≠ emenderValue .s34 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s23_ne_s01 : ndmValue .s23 ≠ ndmValue .s01 :=
-  fun h => ndmValue_s01_ne_s23 h.symm
+private theorem emenderValue_s23_ne_s01 : emenderValue .s23 ≠ emenderValue .s01 :=
+  fun h => emenderValue_s01_ne_s23 h.symm
 
-private theorem ndmValue_s23_ne_s12 : ndmValue .s23 ≠ ndmValue .s12 :=
-  fun h => ndmValue_s12_ne_s23 h.symm
+private theorem emenderValue_s23_ne_s12 : emenderValue .s23 ≠ emenderValue .s12 :=
+  fun h => emenderValue_s12_ne_s23 h.symm
 
-private theorem ndmValue_s23_ne_s34 : ndmValue .s23 ≠ ndmValue .s34 := by
+private theorem emenderValue_s23_ne_s34 : emenderValue .s23 ≠ emenderValue .s34 := by
   intro h
-  exact absurd (ndmValue_injective h) (by decide)
+  exact absurd (emenderValue_injective h) (by decide)
 
-private theorem ndmValue_s34_ne_s01 : ndmValue .s34 ≠ ndmValue .s01 :=
-  fun h => ndmValue_s01_ne_s34 h.symm
+private theorem emenderValue_s34_ne_s01 : emenderValue .s34 ≠ emenderValue .s01 :=
+  fun h => emenderValue_s01_ne_s34 h.symm
 
-private theorem ndmValue_s34_ne_s12 : ndmValue .s34 ≠ ndmValue .s12 :=
-  fun h => ndmValue_s12_ne_s34 h.symm
+private theorem emenderValue_s34_ne_s12 : emenderValue .s34 ≠ emenderValue .s12 :=
+  fun h => emenderValue_s12_ne_s34 h.symm
 
-private theorem ndmValue_s34_ne_s23 : ndmValue .s34 ≠ ndmValue .s23 :=
-  fun h => ndmValue_s23_ne_s34 h.symm
+private theorem emenderValue_s34_ne_s23 : emenderValue .s34 ≠ emenderValue .s23 :=
+  fun h => emenderValue_s23_ne_s34 h.symm
 
-/-- The decoder recovers `transposition g` from each `ndmValue g`. -/
-theorem decode_ndmValue (g : AdjacentGenerator) :
-    decode (ndmValue g) = transposition g := by
+/-- The decoder recovers `transposition g` from each `emenderValue g`. -/
+theorem decode_emenderValue (g : AdjacentGenerator) :
+    decode (emenderValue g) = transposition g := by
   cases g with
   | s01 =>
     unfold decode
     simp
   | s12 =>
     unfold decode
-    simp [ndmValue_s12_ne_s01]
+    simp [emenderValue_s12_ne_s01]
   | s23 =>
     unfold decode
-    simp [ndmValue_s23_ne_s01, ndmValue_s23_ne_s12]
+    simp [emenderValue_s23_ne_s01, emenderValue_s23_ne_s12]
   | s34 =>
     unfold decode
-    simp [ndmValue_s34_ne_s01, ndmValue_s34_ne_s12, ndmValue_s34_ne_s23]
+    simp [emenderValue_s34_ne_s01, emenderValue_s34_ne_s12, emenderValue_s34_ne_s23]
 
 /-! ## Loaded NDM Memory -/
 
@@ -290,33 +290,33 @@ theorem decode_ndmValue (g : AdjacentGenerator) :
 four generator entries. This is the state of the NDM matrix memory after the
 table has been populated. -/
 def loadedMemory : Memory D D :=
-  memoryTable ndmKeyFin ndmValueFin
+  memoryTable emenderKeyFin emenderValueFin
 
-/-- Querying the loaded memory at `ndmKey g` recovers exactly `ndmValue g`. -/
-theorem loadedMemory_read_ndmKey (g : AdjacentGenerator) :
-    read loadedMemory (ndmKey g) = ndmValue g := by
-  have hself : ndmKey g = ndmKeyFin (generatorToFin4 g) := by
-    unfold ndmKeyFin
+/-- Querying the loaded memory at `emenderKey g` recovers exactly `emenderValue g`. -/
+theorem loadedMemory_read_emenderKey (g : AdjacentGenerator) :
+    read loadedMemory (emenderKey g) = emenderValue g := by
+  have hself : emenderKey g = emenderKeyFin (generatorToFin4 g) := by
+    unfold emenderKeyFin
     rw [fin4ToGenerator_generatorToFin4]
-  have hvalself : ndmValue g = ndmValueFin (generatorToFin4 g) := by
-    unfold ndmValueFin
+  have hvalself : emenderValue g = emenderValueFin (generatorToFin4 g) := by
+    unfold emenderValueFin
     rw [fin4ToGenerator_generatorToFin4]
   rw [hself, hvalself]
   exact memoryTable_retrieves_orthonormal
-    ndmKeyFin ndmValueFin ndmKeyFin_orthonormal (generatorToFin4 g)
+    emenderKeyFin emenderValueFin emenderKeyFin_orthonormal (generatorToFin4 g)
 
-/-- Querying the loaded memory at `ndmKey g` and decoding gives the adjacent
+/-- Querying the loaded memory at `emenderKey g` and decoding gives the adjacent
 transposition for `g`. -/
 theorem loadedMemory_decode_eq_transposition (g : AdjacentGenerator) :
-    decode (read loadedMemory (ndmKey g)) = transposition g := by
-  rw [loadedMemory_read_ndmKey, decode_ndmValue]
+    decode (read loadedMemory (emenderKey g)) = transposition g := by
+  rw [loadedMemory_read_emenderKey, decode_emenderValue]
 
 /-- For every input pair `(s, g)`, composing the input S5 state `s` with the
 decoded readout from the loaded NDM memory reproduces the S5 transition table
 entry `s5TransitionMemory.read (s, g) = step s g`. -/
 theorem loadedMemory_implements_s5_lookup
     (s : S5Tracker.State) (g : AdjacentGenerator) :
-    s * decode (read loadedMemory (ndmKey g)) =
+    s * decode (read loadedMemory (emenderKey g)) =
       s5TransitionMemory.read (s, g) := by
   rw [loadedMemory_decode_eq_transposition]
   rfl
@@ -339,8 +339,8 @@ theorem read_zero (k : KeyVec D) : read (0 : Memory D D) k = 0 := by
 /-- Pre-tanh delta write from the zero memory with a unit key is exactly the
 outer product `k vᵀ`. This is the base case for the trajectory bridge. -/
 theorem linearDeltaWrite_from_zero (g : AdjacentGenerator) :
-    linearDeltaWrite (0 : Memory D D) (ndmKey g) (ndmValue g) =
-      M2RNNComparison.outerKV (ndmKey g) (ndmValue g) := by
+    linearDeltaWrite (0 : Memory D D) (emenderKey g) (emenderValue g) =
+      M2RNNComparison.outerKV (emenderKey g) (emenderValue g) := by
   unfold linearDeltaWrite correction
   rw [read_zero]
   simp
@@ -353,16 +353,16 @@ This is the induction step behind the trajectory bridge: the loaded memory
 after writing all generators equals the sum of outer-product terms. -/
 theorem linearDeltaWrite_add_orthonormal_term
     (S : Memory D D) (g : AdjacentGenerator)
-    (hread : read S (ndmKey g) = 0) :
-    linearDeltaWrite S (ndmKey g) (ndmValue g) =
-      S + M2RNNComparison.outerKV (ndmKey g) (ndmValue g) := by
+    (hread : read S (emenderKey g) = 0) :
+    linearDeltaWrite S (emenderKey g) (emenderValue g) =
+      S + M2RNNComparison.outerKV (emenderKey g) (emenderValue g) := by
   unfold linearDeltaWrite correction
   rw [hread]
   simp
 
 /-! ## Main Theorem -/
 
-/-- **`ndm_realizes_s5_tracker`** — the load-bearing NDM-architecture
+/-- **`emender_realizes_s5_tracker`** — the load-bearing NDM-architecture
 realization of the S5 transition table.
 
 There exist:
@@ -372,7 +372,7 @@ There exist:
 * a value family `v : Fin 4 → ValueVec d`,
 * a decay scalar `λ = 1`,
 * a per-generator linear readout query family
-  `q : AdjacentGenerator → KeyVec d` (concretely `q g = ndmKey g`),
+  `q : AdjacentGenerator → KeyVec d` (concretely `q g = emenderKey g`),
 * and a decoder `decode : ValueVec d → S5Tracker.State`,
 
 such that for every input pair `(s, g)`, the NDM delta-memory readout
@@ -383,12 +383,12 @@ decoded and composed with `s`, reproduces the S5 transition table entry
 The loaded memory is exactly the state reached by running the NDM pre-`tanh`
 delta-write core through any input word that touches each adjacent generator
 exactly once (per-step bridge: `linearDeltaWrite_add_orthonormal_term`;
-per-generator readout: `loadedMemory_read_ndmKey`).
+per-generator readout: `loadedMemory_read_emenderKey`).
 
 This is the formal version of the paper's revised wording: *"NDM reaches the
 top of NC1 in the canonical regular-language witness"* (S5 word problem,
 non-solvable, NC1-complete by Barrington's theorem cited externally). -/
-theorem ndm_realizes_s5_tracker :
+theorem emender_realizes_s5_tracker :
     ∃ (d : ℕ) (k : Fin 4 → KeyVec d)
       (v : Fin 4 → ValueVec d) (lambda : Real)
       (q : AdjacentGenerator → KeyVec d)
@@ -401,20 +401,20 @@ theorem ndm_realizes_s5_tracker :
       (∀ (s : S5Tracker.State) (g : AdjacentGenerator),
         s * decode (read (memoryTable k v) (q g)) =
           s5TransitionMemory.read (s, g)) := by
-  refine ⟨D, ndmKeyFin, ndmValueFin, 1, ndmKey, decode,
-    rfl, rfl, ndmKeyFin_orthonormal, ?_, ?_, ?_⟩
+  refine ⟨D, emenderKeyFin, emenderValueFin, 1, emenderKey, decode,
+    rfl, rfl, emenderKeyFin_orthonormal, ?_, ?_, ?_⟩
   · intro g
-    unfold ndmKeyFin
+    unfold emenderKeyFin
     rw [fin4ToGenerator_generatorToFin4]
   · intro g
-    have hval : ndmValueFin (generatorToFin4 g) = ndmValue g := by
-      unfold ndmValueFin
+    have hval : emenderValueFin (generatorToFin4 g) = emenderValue g := by
+      unfold emenderValueFin
       rw [fin4ToGenerator_generatorToFin4]
     rw [hval]
-    exact decode_ndmValue g
+    exact decode_emenderValue g
   · intro s g
-    -- read (memoryTable ndmKeyFin ndmValueFin) (ndmKey g) = ndmValue g
-    have : memoryTable ndmKeyFin ndmValueFin = loadedMemory := rfl
+    -- read (memoryTable emenderKeyFin emenderValueFin) (emenderKey g) = emenderValue g
+    have : memoryTable emenderKeyFin emenderValueFin = loadedMemory := rfl
     rw [this]
     exact loadedMemory_implements_s5_lookup s g
 

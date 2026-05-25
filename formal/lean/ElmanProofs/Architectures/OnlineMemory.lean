@@ -87,12 +87,12 @@ def gdnIdealWrite
   linearDeltaWrite S k v
 
 /-- E88/NDM pre-nonlinearity write with unit decay. -/
-def ndmPreTanhWrite
+def emenderPreTanhWrite
     (S : Memory K V) (k : KeyVec K) (v : ValueVec V) : Memory K V :=
   linearDeltaWrite S k v
 
 /-- E88/NDM's nonlinear full-state version of the delta write. -/
-noncomputable def ndmNonlinearWrite
+noncomputable def emenderNonlinearWrite
     (S : Memory K V) (k : KeyVec K) (v : ValueVec V) : Memory K V :=
   M2RNNComparison.matrixTanh (linearDeltaWrite S k v)
 
@@ -240,9 +240,9 @@ theorem linearDeltaWrite_preserves_orthogonal_query
 
 /-- In the idealized no-decay, unit-write setting, GDN and E88/NDM share the
 same delta-correcting pre-nonlinearity. -/
-theorem gdn_and_ndm_share_ideal_delta_write
+theorem gdn_and_emender_share_ideal_delta_write
     (S : Memory K V) (k : KeyVec K) (v : ValueVec V) :
-    gdnIdealWrite S k v = ndmPreTanhWrite S k v := by
+    gdnIdealWrite S k v = emenderPreTanhWrite S k v := by
   rfl
 
 /-- The ideal overwrite theorem applies to both GDN's delta core and E88/NDM's
@@ -251,7 +251,7 @@ theorem shared_delta_core_exact_overwrite
     (S : Memory K V) (k : KeyVec K) (v : ValueVec V)
     (hk : keyDot k k = 1) :
     read (gdnIdealWrite S k v) k = v ∧
-    read (ndmPreTanhWrite S k v) k = v := by
+    read (emenderPreTanhWrite S k v) k = v := by
   constructor <;> exact linearDeltaWrite_exact_overwrite S k v hk
 
 /-! ## Multi-Key Orthogonal Capacity -/
@@ -427,8 +427,8 @@ theorem gdnIdealWrite_uniformOneStepOverwrite :
   exact linearDeltaWrite_exact_overwrite S k v hk
 
 /-- E88/NDM's pre-nonlinearity delta core satisfies the uniform overwrite target. -/
-theorem ndmPreTanhWrite_uniformOneStepOverwrite :
-    UniformOneStepOverwrite (K := K) (V := V) ndmPreTanhWrite := by
+theorem emenderPreTanhWrite_uniformOneStepOverwrite :
+    UniformOneStepOverwrite (K := K) (V := V) emenderPreTanhWrite := by
   intro S k v hk
   exact linearDeltaWrite_exact_overwrite S k v hk
 
@@ -509,17 +509,17 @@ theorem rawOuterWrite_not_uniformOneStepOverwrite
 GDN's ideal delta core and E88/NDM's pre-tanh delta core satisfy uniform
 one-step overwrite, while M2RNN's raw association primitive cannot satisfy that
 same target without extra state-dependent correction or other machinery. -/
-theorem delta_core_separates_gdn_ndm_from_m2rnn_raw_write
+theorem delta_core_separates_gdn_emender_from_m2rnn_raw_write
     (S₁ S₂ : Memory K V) (k : KeyVec K) (v : ValueVec V) (j : Fin V)
     (hunit : keyDot k k = 1)
     (hread : read S₁ k j ≠ read S₂ k j) :
     UniformOneStepOverwrite (K := K) (V := V) gdnIdealWrite ∧
-    UniformOneStepOverwrite (K := K) (V := V) ndmPreTanhWrite ∧
+    UniformOneStepOverwrite (K := K) (V := V) emenderPreTanhWrite ∧
     ¬ UniformOneStepOverwrite (K := K) (V := V) rawOuterWrite := by
   constructor
   · exact gdnIdealWrite_uniformOneStepOverwrite
   constructor
-  · exact ndmPreTanhWrite_uniformOneStepOverwrite
+  · exact emenderPreTanhWrite_uniformOneStepOverwrite
   · exact rawOuterWrite_not_uniformOneStepOverwrite S₁ S₂ k v j hunit hread
 
 end OnlineMemory

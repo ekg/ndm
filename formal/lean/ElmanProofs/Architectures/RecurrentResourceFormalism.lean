@@ -190,7 +190,7 @@ matrix state, input-dependent delta correction, and many independent recurrent
 programs per token. E88 is the current production implementation lineage of
 this family.
 -/
-def ndm (layers heads nState : Nat) : ArchitectureSignature where
+def emender (layers heads nState : Nat) : ArchitectureSignature where
   name := "E88/NDM"
   stateGeometry := .matrix
   temporalNonlinearity := .fullState
@@ -209,7 +209,7 @@ def ndm (layers heads nState : Nat) : ArchitectureSignature where
 
 /-- Backward-compatible name for the E88 implementation lineage of NDM. -/
 def e88NDM (layers heads nState : Nat) : ArchitectureSignature :=
-  ndm layers heads nState
+  emender layers heads nState
 
 /-- Homogeneous/pure M2RNN: nonlinear matrix-state recurrence, but raw writes and
 a fixed learned right transition. -/
@@ -290,37 +290,37 @@ def mamba2SSM (layers heads stateScalarsPerHead : Nat) : ArchitectureSignature w
 
 /-- Concrete current production NDM geometry: 12 layers, 370 heads per layer,
 and 32×32 state per head. -/
-def ndm_1p27B : ArchitectureSignature :=
-  ndm 12 370 32
+def emender_1p27B : ArchitectureSignature :=
+  emender 12 370 32
 
 /-- Backward-compatible name for the current E88 production geometry. -/
 def e88NDM_1p27B : ArchitectureSignature :=
-  ndm_1p27B
+  emender_1p27B
 
 /-! ## Basic Theorems -/
 
-theorem ndm_1p27B_is_pure_nonlinear_recurrent_stack :
-    isPureNonlinearRecurrentStack ndm_1p27B = true := by
+theorem emender_1p27B_is_pure_nonlinear_recurrent_stack :
+    isPureNonlinearRecurrentStack emender_1p27B = true := by
   rfl
 
-theorem ndm_1p27B_has_delta_memory :
-    hasDeltaCorrectingWrite ndm_1p27B.writeRule = true := by
+theorem emender_1p27B_has_delta_memory :
+    hasDeltaCorrectingWrite emender_1p27B.writeRule = true := by
   rfl
 
-theorem ndm_1p27B_has_matrix_state :
-    hasMatrixState ndm_1p27B.stateGeometry = true := by
+theorem emender_1p27B_has_matrix_state :
+    hasMatrixState emender_1p27B.stateGeometry = true := by
   rfl
 
-theorem ndm_1p27B_programs_per_batch_token (batch : Nat) :
-    programsPerBatchToken ndm_1p27B batch = 12 * 370 * batch := by
+theorem emender_1p27B_programs_per_batch_token (batch : Nat) :
+    programsPerBatchToken emender_1p27B batch = 12 * 370 * batch := by
   rfl
 
-theorem ndm_1p27B_programs_per_batch_token_bs5 :
-    programsPerBatchToken ndm_1p27B 5 = 22200 := by
+theorem emender_1p27B_programs_per_batch_token_bs5 :
+    programsPerBatchToken emender_1p27B 5 = 22200 := by
   rfl
 
-theorem ndm_1p27B_state_scalars_per_layer :
-    stateScalarsPerLayer ndm_1p27B = 370 * (32 * 32) := by
+theorem emender_1p27B_state_scalars_per_layer :
+    stateScalarsPerLayer emender_1p27B = 370 * (32 * 32) := by
   rfl
 
 theorem e88NDM_1p27B_is_pure_nonlinear_recurrent_stack :
@@ -375,9 +375,9 @@ theorem e88_and_gdn_share_delta_style_write
     hasDeltaStyleWrite (gatedDeltaNet layers heads state).writeRule = true := by
   constructor <;> rfl
 
-theorem ndm_and_gdn_share_delta_style_write
+theorem emender_and_gdn_share_delta_style_write
     (layers heads state : Nat) :
-    hasDeltaStyleWrite ndm_1p27B.writeRule = true ∧
+    hasDeltaStyleWrite emender_1p27B.writeRule = true ∧
     hasDeltaStyleWrite (gatedDeltaNet layers heads state).writeRule = true := by
   constructor <;> rfl
 
@@ -387,9 +387,9 @@ theorem e88_and_gdn_split_on_temporal_nonlinearity
     hasTemporalNonlinearity (gatedDeltaNet layers heads state).temporalNonlinearity = false := by
   constructor <;> rfl
 
-theorem ndm_and_gdn_split_on_temporal_nonlinearity
+theorem emender_and_gdn_split_on_temporal_nonlinearity
     (layers heads state : Nat) :
-    hasTemporalNonlinearity ndm_1p27B.temporalNonlinearity = true ∧
+    hasTemporalNonlinearity emender_1p27B.temporalNonlinearity = true ∧
     hasTemporalNonlinearity (gatedDeltaNet layers heads state).temporalNonlinearity = false := by
   constructor <;> rfl
 
@@ -412,10 +412,10 @@ theorem e88_and_m2rnn_share_broad_nonlinear_matrix_family
   constructor <;> rfl
 
 /-- NDM and homogeneous M2RNN share the broad nonlinear matrix-state family. -/
-theorem ndm_and_m2rnn_share_broad_nonlinear_matrix_family
+theorem emender_and_m2rnn_share_broad_nonlinear_matrix_family
     (m2Layers m2Heads m2State : Nat) :
-    hasMatrixState ndm_1p27B.stateGeometry = true ∧
-    hasTemporalNonlinearity ndm_1p27B.temporalNonlinearity = true ∧
+    hasMatrixState emender_1p27B.stateGeometry = true ∧
+    hasTemporalNonlinearity emender_1p27B.temporalNonlinearity = true ∧
     hasMatrixState (m2rnnPure m2Layers m2Heads m2State).stateGeometry = true ∧
     hasTemporalNonlinearity (m2rnnPure m2Layers m2Heads m2State).temporalNonlinearity = true := by
   constructor
@@ -443,13 +443,13 @@ theorem e88_and_m2rnn_differ_as_one_step_transition_families
     cases h
 
 /-- NDM and M2RNN are not the same one-step transition family. -/
-theorem ndm_and_m2rnn_differ_as_one_step_transition_families
+theorem emender_and_m2rnn_differ_as_one_step_transition_families
     (m2Layers m2Heads m2State : Nat) :
-    ndm_1p27B.transitionSide ≠
+    emender_1p27B.transitionSide ≠
       (m2rnnPure m2Layers m2Heads m2State).transitionSide ∧
-    ndm_1p27B.writeRule ≠
+    emender_1p27B.writeRule ≠
       (m2rnnPure m2Layers m2Heads m2State).writeRule ∧
-    ndm_1p27B.transitionControl ≠
+    emender_1p27B.transitionControl ≠
       (m2rnnPure m2Layers m2Heads m2State).transitionControl := by
   constructor
   · intro h
@@ -866,7 +866,7 @@ This is deliberately a one-step/resource theorem, not a broad computability
 separation. It identifies the extra mechanism M2RNN would need to simulate E88:
 an input-dependent left transition or additional resources/steps that recreate
 the missing `-k kᵀ H` correction. -/
-theorem ndm_m2rnn_one_step_resource_separation :
+theorem emender_m2rnn_one_step_resource_separation :
     ImplementsMixedKeyDeltaCorrection (M2RNNComparison.e88DeltaUpdateExpanded 1) ∧
     ∀ resource : FixedRightRawExternalForget2,
       ¬ ImplementsMixedKeyDeltaCorrection resource.update := by
@@ -1048,7 +1048,7 @@ the embedded mixed-key delta correction in one recurrent step, while every
 fixed-right/raw-write M2RNN-style resource with external row/column/cell forget
 fails on the embedded witness.
 -/
-theorem ndm_m2rnn_one_step_resource_separation_embeds
+theorem emender_m2rnn_one_step_resource_separation_embeds
     {K V : Nat} (hK : 1 < K) (hV : 0 < V) :
     ImplementsEmbeddedMixedKeyDeltaCorrection hK hV
       (M2RNNComparison.e88DeltaUpdateExpanded 1) ∧
@@ -1162,13 +1162,13 @@ convergence (Figure 3) is therefore not a token-budget artifact.
 
 This theorem makes NO claim about learning-rate convergence.  It is a pure
 combinatorial cost statement. -/
-theorem ndm_m2rnn_flop_class_equiv (d H depth : Nat) :
-    flopsPerToken (ndm depth H d) = 6 * (d * d) ∧
+theorem emender_m2rnn_flop_class_equiv (d H depth : Nat) :
+    flopsPerToken (emender depth H d) = 6 * (d * d) ∧
     flopsPerToken (m2rnnPure depth H (d * d)) = 7 * (d * d) ∧
-    flopsPerToken (ndm depth H d) ≤ 7 * (d * d) ∧
+    flopsPerToken (emender depth H d) ≤ 7 * (d * d) ∧
     flopsPerToken (m2rnnPure depth H (d * d)) ≤ 7 * (d * d) ∧
-    flopsPerToken (m2rnnPure depth H (d * d)) ≤ 2 * flopsPerToken (ndm depth H d) := by
-  have h1 : flopsPerToken (ndm depth H d) = 6 * (d * d) := rfl
+    flopsPerToken (m2rnnPure depth H (d * d)) ≤ 2 * flopsPerToken (emender depth H d) := by
+  have h1 : flopsPerToken (emender depth H d) = 6 * (d * d) := rfl
   have h2 : flopsPerToken (m2rnnPure depth H (d * d)) = 7 * (d * d) := rfl
   refine ⟨h1, h2, h1 ▸ ?_, h2 ▸ ?_, h2 ▸ h1 ▸ ?_⟩ <;>
     nlinarith [Nat.zero_le (d * d)]
@@ -1261,7 +1261,7 @@ Two architectures with distinct update families (NDM's input-dependent left
 transition delta rule vs. M2RNN's fixed-learned right transition raw-write)
 both satisfy the predicate, confirming that it is about scheduling geometry
 rather than update semantics. -/
-theorem multiProgrammed_admits_m2rnn_and_ndm :
+theorem multiProgrammed_admits_m2rnn_and_emender :
     IsMultiProgrammed e88NDM_1p27B ∧ IsMultiProgrammed m2rnnCMAShape := by
   exact ⟨⟨by decide, by decide, rfl, rfl⟩, ⟨by decide, by decide, rfl, rfl⟩⟩
 

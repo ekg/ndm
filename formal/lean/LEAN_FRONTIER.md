@@ -12,11 +12,11 @@ The v15 Lean core (commit `3553f19`) proves a clean **one-step** resource
 separation between NΔM's delta-correcting write and any fixed-weight raw-write
 RNN at equal per-token FLOP cost. The headline theorems:
 
-* `ndm_realizes_s5_tracker` — NΔM realizes the S₅ tracker at `d = 12`.
-* `ndm_m2rnn_flop_class_equiv` — NΔM and M²RNN-CMA have equivalent per-token
+* `emender_realizes_s5_tracker` — NΔM realizes the S₅ tracker at `d = 12`.
+* `emender_m2rnn_flop_class_equiv` — NΔM and M²RNN-CMA have equivalent per-token
   FLOP cost (both `O(d²)`, within a factor of 2).
-* `multiProgrammed_admits_m2rnn_and_ndm` — multi-programming admits both rules.
-* `ndm_m2rnn_one_step_resource_separation` — at the witness
+* `multiProgrammed_admits_m2rnn_and_emender` — multi-programming admits both rules.
+* `emender_m2rnn_one_step_resource_separation` — at the witness
   `(lowerLeftState, mixedKey, 0)`, no fixed-right raw-write resource (with
   row/column/cell external forget gate) matches NΔM's mixed-key delta
   correction in one recurrent step.
@@ -35,10 +35,10 @@ This document records the v16 push past one-step.
 
 **File:** `formal/lean/ElmanProofs/Architectures/MultiStepSeparation.lean`
 
-**Theorem:** `ndm_m2rnn_two_step_separation`
+**Theorem:** `emender_m2rnn_two_step_separation`
 
 ```
-theorem ndm_m2rnn_two_step_separation :
+theorem emender_m2rnn_two_step_separation :
     twoStep (M2RNNComparison.e88DeltaUpdateExpanded 1)
         lowerLeftState mixedKey (0 : TwoVec) (0 : TwoVec) (0 : TwoVec)
       = ⟨entry (0,0) = tanh(tanh(-1)), other entries 0⟩
@@ -67,10 +67,10 @@ specialized to a constant row vector, so it is also covered.
 
 ### Milestone 2 — k-step separation (**clean, extending toward full S₅**)
 
-**Theorem:** `ndm_m2rnn_k_step_separation`
+**Theorem:** `emender_m2rnn_k_step_separation`
 
 ```
-theorem ndm_m2rnn_k_step_separation (k : ℕ) (hk : 1 ≤ k)
+theorem emender_m2rnn_k_step_separation (k : ℕ) (hk : 1 ≤ k)
     (resource : FixedRightRawExternalForget2) :
     iterUpdate resource.update lowerLeftState (kStepWitnessInputs k) ≠
       iterUpdate (M2RNNComparison.e88DeltaUpdateExpanded 1)
@@ -85,7 +85,7 @@ lemma chains across every `(0, 0)` input step; the resulting M²RNN entry
 `tanhIter k (-1)` (the `k`-fold composition of `tanh` at `-1`), which is
 nonzero by induction using the injectivity of `tanh` and `tanh(0) = 0`.
 
-**Existential form:** `ndm_m2rnn_k_step_separation_exists` says for every
+**Existential form:** `emender_m2rnn_k_step_separation_exists` says for every
 `k ≥ 1` and every fixed-right raw-write resource, there is a `k`-token input
 sequence (specifically `kStepWitnessInputs k`) on which the `k`-step
 compositions of the resource and NΔM disagree.
@@ -182,7 +182,7 @@ the S₅ generator alphabet** and requires a **capacity bound**:
 
 ### What partial result we do have, and how it relates
 
-The k-step separation `ndm_m2rnn_k_step_separation` is a **witness** result,
+The k-step separation `emender_m2rnn_k_step_separation` is a **witness** result,
 not a **capacity** result. It says: *there exists* a specific 2D input
 sequence on which NΔM and any fixed-right raw-write resource disagree, at
 every length `k ≥ 1`. It does **not** say that on the S₅ generator alphabet
@@ -239,9 +239,9 @@ plus a length parameter `T`.
 
 **Step E. Combine:**
 ```
-theorem ndm_m2rnn_s5_inseparability (d : ℕ) :
+theorem emender_m2rnn_s5_inseparability (d : ℕ) :
     ∃ T : ℕ,
-      (∃ ndm_config, TracksS5 (ndm_config.run) d T) ∧
+      (∃ emender_config, TracksS5 (emender_config.run) d T) ∧
       (∀ R : BoundedRawWriteRNN d, ¬ TracksS5 R.run d T)
 ```
 with `T = poly(d, k_precision) + 1` (or similar).
@@ -284,11 +284,11 @@ mechanization cost:
    preservation lemmas at general `K ≥ 2, V ≥ 1`
    (`FixedRightRawExternalForgetKV_preserves_zero_row`,
    `iterUpdateKV_m2rnn_kStep_entry_zero`). What remains is the NDM-side
-   `iterUpdateKV_ndm_kStep_entry` lemma — the 2D `fin_cases` discharge does
+   `iterUpdateKV_emender_kStep_entry` lemma — the 2D `fin_cases` discharge does
    not lift directly to `Fin K`; the KV summation needs to be split manually
    into the `l = 0, l = 1, l ≥ 2` cases. This is a tractable but laborious
    piece of explicit matrix arithmetic. Doing it lifts
-   `ndm_m2rnn_k_step_separation` to all `K ≥ 2, V ≥ 1`, removing the
+   `emender_m2rnn_k_step_separation` to all `K ≥ 2, V ≥ 1`, removing the
    "the 2D witness might be a low-dimensional artifact" objection.
 
 2. **Develop bounded-precision raw-write RNNs.** This is the prerequisite for
@@ -317,12 +317,12 @@ mechanization cost:
 
 * `formal/lean/ElmanProofs/Architectures/MultiStepSeparation.lean` — new
   module; imports `M2RNNComparison`, `RecurrentResourceFormalism`,
-  `Activations.Lipschitz`. Theorems: `ndm_m2rnn_two_step_separation`,
-  `ndm_m2rnn_two_step_separation_exists`, `ndm_m2rnn_k_step_separation`,
-  `ndm_m2rnn_k_step_separation_exists`, plus supporting lemmas
+  `Activations.Lipschitz`. Theorems: `emender_m2rnn_two_step_separation`,
+  `emender_m2rnn_two_step_separation_exists`, `emender_m2rnn_k_step_separation`,
+  `emender_m2rnn_k_step_separation_exists`, plus supporting lemmas
   (`tanhIter`, `tanhIter_ne_zero_of_ne_zero`, `tanhIter_tanh_comm`,
-  `iterUpdate_zeroSteps_preserves_row0`, `ndm_iter_zero_clean`,
-  `ndm_step1_clean_matrix`, `ndm_zero_step_on_clean_state`,
+  `iterUpdate_zeroSteps_preserves_row0`, `emender_iter_zero_clean`,
+  `emender_step1_clean_matrix`, `emender_zero_step_on_clean_state`,
   `FixedRightRawExternalForget2_preserves_zero_row`,
   `m2rnnCandidate_row0_zero_at_zero_row` and per-resource variants).
 
@@ -346,9 +346,9 @@ mechanization cost:
 
 ## Concrete commit log
 
-* `lean: two-step separation theorem (ndm_m2rnn_two_step_separation)`
+* `lean: two-step separation theorem (emender_m2rnn_two_step_separation)`
   — Milestone 1 landed.
-* `lean: k-step separation theorem (ndm_m2rnn_k_step_separation)`
+* `lean: k-step separation theorem (emender_m2rnn_k_step_separation)`
   — Milestone 2 partial; k-step witness extension; full S₅-coset inseparability
   with explicit T(d) **not** reached; reason documented in this file.
 * `lean: document multi-step frontier in LEAN_FRONTIER.md` — this file

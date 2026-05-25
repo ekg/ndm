@@ -14,7 +14,7 @@ This module extends the one-step resource separation in
 
 ## What this module proves
 
-The existing one-step theorem `ndm_m2rnn_one_step_resource_separation` shows that
+The existing one-step theorem `emender_m2rnn_one_step_resource_separation` shows that
 for the witness `(lowerLeftState, mixedKey, 0)`, no fixed-right/raw-write
 M2RNN-style resource (with row, column, or cell forget carry) can match NDM's
 single recurrent update.
@@ -159,7 +159,7 @@ theorem twoStep_m2rnn_entry_zero
 
 /-- After one NDM step on `(lowerLeftState, mixedKey, 0)`, the state at entry
 `(0, 0)` is `tanh(-1)`. -/
-theorem ndm_step1_entry_at_witness :
+theorem emender_step1_entry_at_witness :
     M2RNNComparison.e88DeltaUpdateExpanded 1 lowerLeftState mixedKey (0 : TwoVec) 0 0
       = Real.tanh (-1) := by
   simp [M2RNNComparison.e88DeltaUpdateExpanded, M2RNNComparison.e88DeltaTransition,
@@ -167,7 +167,7 @@ theorem ndm_step1_entry_at_witness :
     M2RNNComparison.outerKV, lowerLeftState, mixedKey, Matrix.mul_apply]
 
 /-- An NDM step with `k = 0` and `v = 0` reduces to elementwise `tanh`. -/
-theorem ndm_zero_input_step (H : TwoMat) (i j : Fin 2) :
+theorem emender_zero_input_step (H : TwoMat) (i j : Fin 2) :
     M2RNNComparison.e88DeltaUpdateExpanded 1 H (0 : TwoVec) (0 : TwoVec) i j
       = Real.tanh (H i j) := by
   simp [M2RNNComparison.e88DeltaUpdateExpanded, M2RNNComparison.e88DeltaTransition,
@@ -177,13 +177,13 @@ theorem ndm_zero_input_step (H : TwoMat) (i j : Fin 2) :
 
 /-- After two NDM steps on `(lowerLeftState, mixedKey, 0)` then `(0, 0)`, the
 entry `(0, 0)` is `tanh(tanh(-1))`, which is strictly nonzero. -/
-theorem ndm_twoStep_entry_at_witness :
+theorem emender_twoStep_entry_at_witness :
     twoStep (M2RNNComparison.e88DeltaUpdateExpanded 1)
         lowerLeftState mixedKey (0 : TwoVec) (0 : TwoVec) (0 : TwoVec) 0 0
       = Real.tanh (Real.tanh (-1)) := by
   unfold twoStep
-  rw [ndm_zero_input_step]
-  rw [ndm_step1_entry_at_witness]
+  rw [emender_zero_input_step]
+  rw [emender_step1_entry_at_witness]
 
 /-- `tanh(tanh(-1))` is nonzero. -/
 theorem tanh_tanh_neg_one_ne_zero : Real.tanh (Real.tanh (-1)) ≠ 0 := by
@@ -211,7 +211,7 @@ fixed-right raw-write resource produces exactly `0`.
 This rules out the possibility that the one-step gap is washed out by
 composition. The resource separation persists through (at least) two recurrent
 steps. -/
-theorem ndm_m2rnn_two_step_separation :
+theorem emender_m2rnn_two_step_separation :
     twoStep (M2RNNComparison.e88DeltaUpdateExpanded 1)
         lowerLeftState mixedKey (0 : TwoVec) (0 : TwoVec) (0 : TwoVec)
       = Matrix.of (fun i j =>
@@ -228,7 +228,7 @@ theorem ndm_m2rnn_two_step_separation :
     by_cases h : i = 0 ∧ j = 0
     · rcases h with ⟨hi, hj⟩
       subst hi; subst hj
-      simp [ndm_twoStep_entry_at_witness]
+      simp [emender_twoStep_entry_at_witness]
     · simp [h]
   · intro resource hEq
     have hR : twoStep resource.update lowerLeftState mixedKey (0 : TwoVec)
@@ -237,7 +237,7 @@ theorem ndm_m2rnn_two_step_separation :
     have hN : twoStep (M2RNNComparison.e88DeltaUpdateExpanded 1)
         lowerLeftState mixedKey (0 : TwoVec) (0 : TwoVec) (0 : TwoVec) 0 0
         = Real.tanh (Real.tanh (-1)) :=
-      ndm_twoStep_entry_at_witness
+      emender_twoStep_entry_at_witness
     have hEqEntry :
         twoStep resource.update lowerLeftState mixedKey (0 : TwoVec)
             (0 : TwoVec) (0 : TwoVec) 0 0 =
@@ -257,14 +257,14 @@ composed two-step output.
 
 The witnessing sequence is `[(mixedKey, 0), (0, 0)]`, applied to the witness
 state `lowerLeftState`. -/
-theorem ndm_m2rnn_two_step_separation_exists :
+theorem emender_m2rnn_two_step_separation_exists :
     ∀ resource : FixedRightRawExternalForget2,
       ∃ (H0 : TwoMat) (k1 v1 k2 v2 : TwoVec),
         twoStep resource.update H0 k1 v1 k2 v2 ≠
           twoStep (M2RNNComparison.e88DeltaUpdateExpanded 1) H0 k1 v1 k2 v2 := by
   intro resource
   refine ⟨lowerLeftState, mixedKey, (0 : TwoVec), (0 : TwoVec), (0 : TwoVec), ?_⟩
-  exact (ndm_m2rnn_two_step_separation.2 resource)
+  exact (emender_m2rnn_two_step_separation.2 resource)
 
 /-! ## k-step separation
 
@@ -361,7 +361,7 @@ theorem iterUpdate_m2rnn_kStep_entry_zero
 /-- An NDM step with `(k = 0, v = 0)` applied to a matrix whose row 0 is
 `(a, 0)` and rows ≥ 1 are zero produces a matrix whose row 0 is `(tanh a, 0)`
 and rows ≥ 1 are zero. -/
-theorem ndm_zero_step_on_clean_state
+theorem emender_zero_step_on_clean_state
     (a : ℝ) (i j : Fin 2) :
     M2RNNComparison.e88DeltaUpdateExpanded 1
         (Matrix.of (fun (r c : Fin 2) =>
@@ -376,7 +376,7 @@ theorem ndm_zero_step_on_clean_state
 
 /-- After one NDM step on the witness, the state at position `(i, j)` equals
 `tanh(-1)` when `(i, j) = (0, 0)` and `0` otherwise. -/
-theorem ndm_step1_clean_form (i j : Fin 2) :
+theorem emender_step1_clean_form (i j : Fin 2) :
     M2RNNComparison.e88DeltaUpdateExpanded 1 lowerLeftState mixedKey (0 : TwoVec) i j
       = (if i = 0 ∧ j = 0 then Real.tanh (-1) else 0) := by
   fin_cases i <;> fin_cases j <;>
@@ -387,18 +387,18 @@ theorem ndm_step1_clean_form (i j : Fin 2) :
 
 /-- After one NDM step on the witness, the full state matrix equals the
 "clean" form: `(0, 0)` entry is `tanh(-1)`, all others zero. -/
-theorem ndm_step1_clean_matrix :
+theorem emender_step1_clean_matrix :
     M2RNNComparison.e88DeltaUpdateExpanded 1 lowerLeftState mixedKey (0 : TwoVec)
       = Matrix.of (fun (r c : Fin 2) =>
           if r = 0 ∧ c = 0 then Real.tanh (-1) else 0) := by
   ext i j
-  rw [ndm_step1_clean_form]
+  rw [emender_step1_clean_form]
   by_cases h : i = 0 ∧ j = 0 <;> simp [h, Matrix.of_apply]
 
 /-- Applying `n` zero-input NDM steps to a "clean" matrix whose `(0,0)` entry
 is `a` and other entries are `0` produces another "clean" matrix whose `(0, 0)`
 entry is `tanhIter n a`. -/
-theorem ndm_iter_zero_clean (n : ℕ) (a : ℝ) :
+theorem emender_iter_zero_clean (n : ℕ) (a : ℝ) :
     iterUpdate (M2RNNComparison.e88DeltaUpdateExpanded 1)
         (Matrix.of (fun (r c : Fin 2) => if r = 0 ∧ c = 0 then a else 0))
         (zeroSteps n)
@@ -416,7 +416,7 @@ theorem ndm_iter_zero_clean (n : ℕ) (a : ℝ) :
           = Matrix.of (fun (r c : Fin 2) =>
               if r = 0 ∧ c = 0 then Real.tanh a else 0) := by
       ext i j
-      rw [ndm_zero_step_on_clean_state]
+      rw [emender_zero_step_on_clean_state]
       by_cases h : i = 0 ∧ j = 0 <;> simp [h, Matrix.of_apply]
     rw [hstep, ih]
     ext i j
@@ -426,14 +426,14 @@ theorem ndm_iter_zero_clean (n : ℕ) (a : ℝ) :
 
 /-- Entry `(0, 0)` of the k-step NDM trajectory on the witness is
 `tanhIter k (-1)` for every `k ≥ 1`. -/
-theorem iterUpdate_ndm_kStep_entry
+theorem iterUpdate_emender_kStep_entry
     (k : ℕ) (hk : 1 ≤ k) :
     iterUpdate (M2RNNComparison.e88DeltaUpdateExpanded 1)
         lowerLeftState (kStepWitnessInputs k) 0 0
       = tanhIter k (-1) := by
   unfold kStepWitnessInputs
   simp only [iterUpdate]
-  rw [ndm_step1_clean_matrix, ndm_iter_zero_clean]
+  rw [emender_step1_clean_matrix, emender_iter_zero_clean]
   simp only [Matrix.of_apply, and_self, if_true]
   -- After rewriting, goal: tanhIter (k - 1) (Real.tanh (-1)) = tanhIter k (-1)
   rw [tanhIter_tanh_comm]
@@ -458,9 +458,9 @@ The witness input is `kStepWitnessInputs k = [(mixedKey, 0), (0, 0), …, (0, 0)
 
 This shows the one-step separation does not wash out over composition: it
 strictly persists for every finite length. The result generalizes
-`ndm_m2rnn_two_step_separation` and constitutes the cleanest Lean ceiling
+`emender_m2rnn_two_step_separation` and constitutes the cleanest Lean ceiling
 reachable on the multi-step composition axis. -/
-theorem ndm_m2rnn_k_step_separation
+theorem emender_m2rnn_k_step_separation
     (k : ℕ) (hk : 1 ≤ k) (resource : FixedRightRawExternalForget2) :
     iterUpdate resource.update lowerLeftState (kStepWitnessInputs k) ≠
       iterUpdate (M2RNNComparison.e88DeltaUpdateExpanded 1)
@@ -468,20 +468,20 @@ theorem ndm_m2rnn_k_step_separation
   intro hEq
   have hEntry := congrFun (congrFun hEq 0) 0
   rw [iterUpdate_m2rnn_kStep_entry_zero resource k hk,
-      iterUpdate_ndm_kStep_entry k hk] at hEntry
+      iterUpdate_emender_kStep_entry k hk] at hEntry
   exact tanhIter_ne_zero_of_ne_zero k (-1) (by norm_num) hEntry.symm
 
 /-- **k-step separation in existential form.** For every `k ≥ 1` and every
 fixed-right raw-write resource, there is a `k`-token input sequence on which
 the `k`-step composition differs from NDM. -/
-theorem ndm_m2rnn_k_step_separation_exists
+theorem emender_m2rnn_k_step_separation_exists
     (k : ℕ) (hk : 1 ≤ k) (resource : FixedRightRawExternalForget2) :
     ∃ (H0 : TwoMat) (inputs : List (TwoVec × TwoVec)),
       inputs.length = k ∧
       iterUpdate resource.update H0 inputs ≠
         iterUpdate (M2RNNComparison.e88DeltaUpdateExpanded 1) H0 inputs := by
   refine ⟨lowerLeftState, kStepWitnessInputs k, ?_,
-    ndm_m2rnn_k_step_separation k hk resource⟩
+    emender_m2rnn_k_step_separation k hk resource⟩
   -- Length of kStepWitnessInputs k is k for k ≥ 1.
   unfold kStepWitnessInputs
   have hlen : (zeroSteps (k - 1)).length = k - 1 := by
@@ -496,7 +496,7 @@ theorem ndm_m2rnn_k_step_separation_exists
 The 2D k-step separation above is the cleanest concrete witness. This section
 lifts the **M2RNN side** of the argument to arbitrary state dimensions
 `K ≥ 2, V ≥ 1`, using the embedding scheme of
-`ndm_m2rnn_one_step_resource_separation_embeds`.
+`emender_m2rnn_one_step_resource_separation_embeds`.
 
 The M2RNN-side row-0 zero preservation lemmas generalize cleanly to KV; they
 are stated and proved below. The full KV k-step separation theorem additionally
@@ -504,7 +504,7 @@ needs a clean-form tracking lemma for the NDM trajectory in KV dimensions —
 that step is more intricate because the matrix multiplication in KV does not
 reduce by `fin_cases` over a small index set, and proving entry `(i₀, j₀)` of
 `(I − k kᵀ) · H` equals `−1` requires summing carefully over `Fin K`. The
-proof structure exists in spirit (replicate `ndm_step1_clean_matrix` with
+proof structure exists in spirit (replicate `emender_step1_clean_matrix` with
 explicit indices), but the in-Lean discharge runs into normalisation friction
 that we leave as v17 work.
 
@@ -639,7 +639,7 @@ theorem iterUpdateKV_m2rnn_kStep_entry_zero
 
 /-! ### NDM-side k-step KV tracking — left to v17
 
-Replicating `iterUpdate_ndm_kStep_entry` in KV requires careful arithmetic on
+Replicating `iterUpdate_emender_kStep_entry` in KV requires careful arithmetic on
 `∑ l : Fin K, (I − k kᵀ) i l · H l j`. The exact value `−1` at entry
 `(i₀, j₀)` after one NDM step depends on `embeddedMixedKey` having ones at
 exactly two positions and zeros elsewhere, combined with
