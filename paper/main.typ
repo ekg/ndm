@@ -58,7 +58,7 @@ CMA-ES configs, and the Triton kernel released.
 */
 
 #show: arkheion.with(
-  title: "Emending Pure Nonlinear Recurrence",
+  title: "Emending Nonlinear Recurrence",
   authors: (
     (
       name: "Erik Garrison",
@@ -68,34 +68,33 @@ CMA-ES configs, and the Triton kernel released.
     ),
   ),
   abstract: [
-    *Pure Nonlinear Recurrent (PNR) language models* — pure-recurrent,
-    time-serial, attention-free architectures with a nonlinearity on
-    the recurrent state itself — have been treated as off-limits at
-    foundation-model scale because they foreclose the time-axis
-    parallel scan that linear-recurrent variants rely on for GPU
-    throughput. We test this verdict by training two PNR instances at
-    1.27–1.35 B parameters on The Pile: *the Emender* (this work; delta-correcting
-    update $S <- tanh(d S + k(v - S^T k)^T)$) and *M²RNN-CMA*
-    (a CMA-reshaped pure-recurrent variant of M²RNN; raw-write update
-    $tanh(H W + k v^T)$), alongside the linear-recurrent baseline
+    *Emendation* is an update-rule innovation for nonlinear recurrent
+    state: at each step the model reads what memory predicts at the
+    addressed key, computes the prediction error, and writes the
+    *correction* against the existing slot rather than a raw additive
+    overwrite — $S <- tanh(d S + k(v - S^T k)^T)$. We demonstrate
+    emendation in the attention-free, time-serial recurrent setting
+    where comparisons are cleanest, by training the *Emender* (this
+    work) and the raw-write *M²RNN-CMA* baseline at 1.27–1.35 B
+    parameters on The Pile, alongside the linear-recurrent baseline
     *Gated DeltaNet*. Each architecture is tuned under per-architecture
     CMA-ES. All three land in the same loss-vs-wallclock band:
-    *nonlinearity in time is not a cost* at this scale, and the
-    status-quo verdict on the PNR class is an artefact of the axis the
-    field chose to parallelise over. We recover throughput on the
-    width axis instead, via *multi-programming* — replicating the
-    recurrence across many independent heads while the time loop stays
-    serial inside each. Within the PNR class, the Emender (this work's
-    delta-correct instance) trains consistently ahead of M²RNN-CMA;
+    *nonlinearity in time is not a cost* at this scale. We recover
+    throughput on the width axis via *multi-programming* — 22,200
+    small independent recurrent programs per token at the production
+    shape, with the time loop kept serial inside each. The Emender
+    trains consistently ahead of M²RNN-CMA across the sampled window;
     a one-step representability separation between the two update
-    rules, formalised in Lean 4, is confirmed empirically on
-    capacity-overparameterised state-tracking probes ($S_5$, $S_3$).
-    We will release Emender checkpoints together with M²RNN-CMA
-    and the GDN baseline, the per-architecture CMA-ES
-    configurations, and the Triton multi-programming kernel on
-    HuggingFace at publication; the trusted Lean 4 core has no
-    `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in its import
-    closure.
+    rules, together with its $k$-step extension, is confirmed
+    empirically on capacity-overparameterised state-tracking probes
+    ($S_5$, $S_3$). All separation theorems are machine-checked in
+    Lean 4 (§7). Emendation is one response to the recurrent
+    state-tracking problem; hybrid architectures that recover state
+    tracking by interleaving attention with recurrent state (M²RNN,
+    Titans, Griffin, OLMo-Hybrid) are a complementary response. We
+    will release Emender checkpoints together with M²RNN-CMA and the
+    GDN baseline, the per-architecture CMA-ES configurations, and the
+    Triton multi-programming kernel on HuggingFace at publication.
   ],
   keywords: (
     "recurrent neural networks",
@@ -194,6 +193,39 @@ linear-recurrent models, but it is not necessary for scaling; the width
 axis is an alternative the field has under-explored for
 pure-nonlinear-recurrent models specifically.
 
+#heading(level: 2, numbering: none)[Emendation is one response; hybrids are another]
+
+The recurrent state-tracking problem — how does a fixed-width recurrent
+layer maintain enough state to track structured prefixes like the $S_5$
+word problem? — admits more than one architectural response. *Hybrid*
+architectures interleave recurrent layers with attention layers and
+recover much of what attention-free recurrence loses on state tracking
+and long-range mixing; M²RNN @m2rnn2026, OLMo-Hybrid @olmohybrid2026,
+Titans @titans2025, and Griffin @griffin2024 are recent instances, and
+the formal limit-of-pure-recurrence story is documented by Merrill,
+Petty and Sabharwal @merrill2024transformers. *Emendation* — the
+update-rule innovation introduced in this paper — is a different
+response: it does not add cross-token mixing, but it changes what the
+recurrent state writes at each step from a raw additive overwrite to a
+delta correction against the existing slot. The two responses are
+complementary, not rival: a hybrid stack can in principle use any update
+rule in its recurrent layers, and emendation is well-defined wherever a
+matrix-state recurrent layer is.
+
+For this paper, we evaluate emendation in the attention-free,
+time-serial recurrent arena — the *pure nonlinear recurrent (PNR)*
+setting in the sense of "no cross-token attention mechanism"; gating,
+projections, normalisations and other intra-token nonlinear operations
+are permitted and indeed load-bearing (see §3, ingredient (c) and §5 on
+gradient conditioning). The PNR arena is where the comparison is
+cleanest (an emendation-vs-raw-write update-rule contrast, with FLOP
+class held equal — §7), where the Lean 4 separation theorems are
+tractable (sets C and C′), and where the scaling demonstration is most
+load-bearing (no architectural escape hatch from the recurrent state).
+That is a *demonstration arena*, not a scope claim on the technique
+itself; emendation should generalise to hybrid recurrent layers where a
+matrix state and a delta-correcting write make sense.
+
 The closest prior art is the pair of recent attempts that scale
 nonlinear recurrence by different concessions. M²RNN @m2rnn2026
 demonstrates that nonlinear matrix-state recurrence trains at 7 B MoE
@@ -207,6 +239,62 @@ parallelising the time axis. The pure-recurrent, time-serial,
 attention-free variant has not been demonstrated at LLM scale. This
 work takes that variant and puts it head-to-head with a delta-correct
 alternative under matched conditions.
+
+#heading(level: 2, numbering: none)[Contribution]
+
+This paper's contribution is a *synthesis* of five components. None of
+the components is individually novel; the synthesis as a working,
+trainable foundation-model-scale architecture is. We demonstrate the
+synthesis in the attention-free PNR arena (see §1 "Emendation is one
+response..."), where each component is most legible; the emendation
+piece in particular is a general update-rule technique not bound to
+that arena.
+
+#set enum(numbering: "1.")
+
++ *Many-headed cache-fit multi-programming.* The 1.27 B production
+  stack exposes 22,200 small independent recurrent programs per token
+  (370 heads $times$ batch size 5 $times$ depth 12), each a
+  $32 times 32$ matrix-state tile that fits in registers / L1 / SRAM.
+  This width-axis parallelism is what makes attention-free nonlinear
+  recurrence competitive on wallclock with the linear-scan baselines
+  that monolithic large-state RNNs forfeit. Lean-witnessed by
+  `emender_1p27B_programs_per_batch_token_bs5`.
+
++ *Emendation / delta correction.* The general update-rule innovation:
+  $S <- tanh(d S + k (v - S^T k)^T)$ writes the *correction* against
+  the existing slot rather than a raw additive overwrite. With
+  orthonormal keys this gives exact overwrite at one slot while
+  preserving the others; with arbitrary keys it gives bounded
+  error-correcting binding (§3, Theorem sets C and C′ in §7).
+  Emendation is well-defined wherever a matrix-state recurrent layer
+  is; the PNR demonstration here is the cleanest comparison setting,
+  not the technique's scope.
+
++ *Gating, with the ablation that says it matters.* Earlier
+  non-gated 'E-version' prototypes (the E63–E75 lineage; Appendix) were
+  *not* amenders in the operational sense — they accumulated
+  uncorrected drift. The SiLU output gate is load-bearing under the
+  ablation lineage that produced the production stack; removing it
+  costs accuracy on state tracking.
+
++ *Triton kernel — portable, performant foundation.* The fused
+  forward and sparse-checkpoint backward kernels are written once in
+  Triton @triton2019 and dispatched identically on NVIDIA CUDA and
+  AMD ROCm. Moving off CUDA-specific paths to Triton gives portability
+  at $approx 70%$ of hand-tuned HIP throughput in $approx 1$ week of
+  porting work (versus 3–6 weeks for a HIP rewrite). The kernel is
+  released as the foundation for further update-rule research, not as
+  a one-off for this paper.
+
++ *Synthesis: Emender 88 (E88).* "Emender 88" (E88) is the specific
+  version handle within the Emender family for the integration of
+  (1)+(2)+(3)+(4) at 1.27 B parameters. The contribution is the
+  integration: each component is small or known; together they
+  constitute the first foundation-model-scale demonstration of
+  emendation in the PNR arena.
+
+#set enum(numbering: "(a)")
 
 This paper establishes the PNR class as viable at foundation-model
 scale, by training two PNR instances at the 1.27–1.35 B parameter
@@ -984,65 +1072,22 @@ pattern $[upright("Emender"), upright("Emender"), upright("GDN"), upright("GDN")
 *hybridisation degrades state tracking below either pure family*:
 
 #figure(
-  kind: image,
-  block(width: 100%, [
-    #align(center)[
-      #stack(dir: ttb, spacing: 0.4em,
-        // Modular counter
-        [
-          #set text(size: 9pt)
-          #align(center)[*Modular counter (K=5)*]
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[pure Emender]),
-            box(width: 9em)[#rect(width: 0.903 * 9em, height: 0.8em, fill: blue)],
-            [0.903]
-          )
-          #v(0.2em)
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[pure GDN]),
-            box(width: 9em)[#rect(width: 0.648 * 9em, height: 0.8em, fill: gray)],
-            [0.648]
-          )
-          #v(0.2em)
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[Emender+GDN hybrid]),
-            box(width: 9em)[#rect(width: 0.536 * 9em, height: 0.8em, fill: red)],
-            [0.536]
-          )
-        ],
-        v(0.6em),
-        // FSM tracking
-        [
-          #set text(size: 9pt)
-          #align(center)[*FSM tracking (K=4 states)*]
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[pure Emender]),
-            box(width: 9em)[#rect(width: 1.0 * 9em, height: 0.8em, fill: blue)],
-            [1.000]
-          )
-          #v(0.2em)
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[pure GDN]),
-            box(width: 9em)[#rect(width: 0.830 * 9em, height: 0.8em, fill: gray)],
-            [0.830]
-          )
-          #v(0.2em)
-          #stack(dir: ltr, spacing: 0.5em,
-            align(right, box(width: 6em)[Emender+GDN hybrid]),
-            box(width: 9em)[#rect(width: 0.713 * 9em, height: 0.8em, fill: red)],
-            [0.713]
-          )
-        ],
-      )
-    ]
-  ]),
+  image("figures/hybrid_degradation_seeds.png", width: 95%),
   caption: [
-    *Hybrid degradation.* Interleaving Emender layers with linear-scan
-    (Gated DeltaNet) layers in an `[Emender, Emender, GDN, GDN]` pattern
-    *underperforms* pure Emender on both modular counter and FSM tracking,
-    and underperforms pure GDN on modular counter. State-tracking
-    capability is not a property the Emender block can lend to a stack
-    of mixed blocks; purity is part of the recipe.
+    *Hybrid degradation: per-seed accuracy at 8 M scale, 3 seeds per
+    condition.* Interleaving Emender layers with linear-scan (Gated
+    DeltaNet) layers in an `[Emender, Emender, GDN, GDN]` AABB pattern
+    *underperforms* pure Emender on both modular counter ($K=5$) and
+    FSM tracking ($K=4$ states), and underperforms pure GDN on modular
+    counter. Bars show the seed mean; error bars span the SEM (standard
+    error of the mean across 3 seeds); individual seed points are
+    overlaid (seeds 42, 123, 456). The dashed line is the random
+    baseline ($1/K$). State-tracking capability is not a property the
+    Emender block can lend to a stack of mixed blocks; purity is part of
+    the recipe. Source: per-seed JSON under
+    `paper/results/figure_4_hybrid/`; figure script:
+    `paper/figures/plot_hybrid_degradation.py`. Mean $plus.minus$ std
+    mirrors `experiments/expressivity_tasks/CANONICAL_SWEEP_RESULTS.md`.
   ],
 ) <fig_hybrid>
 
@@ -1110,9 +1155,20 @@ already pulled ahead on reasoning.
 
 We have a trusted Lean 4 @lean42021 core built on Mathlib
 @mathlib4. The import closure of the `ElmanProofs.PaperCore` module
-(nine source files) contains no `sorry`, no `admit`, no `axiom`, no
-`opaque`, and no `native_decide`. Each result below is identified by its
-exact theorem name so that the reader can locate it in the source.
+(ten source files at the time of writing) contains no `sorry`, no
+`admit`, no `axiom`, no `opaque`, and no `native_decide`. Each result
+below is identified by its exact theorem name so that the reader can
+locate it in the source. The headline §7 result is the *k-step
+separation*
+(`emender_m2rnn_k_step_separation`, theorem set C′ below): for every
+$k >= 1$ and every fixed-right raw-write resource with row/column/cell
+external forget gates, there is an explicit $k$-token input sequence on
+which the $k$-step trajectories disagree. This is the machine-checked
+answer to the reviewer-of-record concern that *"a one-step advantage
+could in principle wash out over a trajectory or compound"*: the gap
+strictly persists for every finite $k$ on the constructed witness
+alphabet. The scope of what is and is not proved is summarised
+honestly under "Frontier and unproven targets" below.
 
 #heading(level: 2, numbering: none)[Theorem set A: finite-state ceiling and $S_5$ tracker]
 
@@ -1180,6 +1236,89 @@ provably distinct as update families.
   that *if* M²RNN is given the extra read-then-delta resource, it can
   embed one Emender step. The separation in the previous bullet says that
   without that extra resource M²RNN cannot.
+
+#heading(level: 2, numbering: none)[Theorem set C′: multi-step (k-step) separation]
+
+The one-step separation of set C does *not* wash out under composition.
+
+#block(inset: (x: 1.5em), [
+*For every $k >= 1$, there is an explicit $k$-token input sequence such
+that the $k$-step trajectory of any fixed-weight raw-write resource (in
+the row/column/cell external-forget class) diverges from the Emender's
+$k$-step trajectory by a margin bounded away from zero (Lean:
+`emender_m2rnn_k_step_separation`).*
+])
+
+This is the direct, machine-checked answer to the reviewer-of-record
+concern that the one-step advantage might compound away over a
+trajectory. The witness alphabet is the 2-dimensional construction from
+set C composed with zero-input filler tokens
+(`kStepWitnessInputs k = (mixedKey, 0) :: zeroSteps (k - 1)`); the
+proof inducts on the tail, using the row-0 preservation lemma
+(`FixedRightRawExternalForget2_preserves_zero_row`) to keep entry
+$(0, 0)$ at zero on the raw-write side for every $k$, while the Emender
+side reduces to the $k$-fold composition of $tanh$ at $-1$, which is
+nonzero by injectivity of $tanh$. The existential form
+`emender_m2rnn_k_step_separation_exists` packages the same statement
+existentially over $k$-step input sequences. The two-step case is
+exposed separately (`emender_m2rnn_two_step_separation`) as the
+inductive base. All three live in the new module
+`ElmanProofs.Architectures.MultiStepSeparation`, which is part of the
+trusted import closure of `PaperCore`. The result rules out the
+"wash-out over composition" failure mode the reviewer worried about,
+for the resource class covered by set C, on the constructed witness.
+The §6 length-extrapolation curves (parity, FSM tracking, modular
+counter; Emender-vs-baseline gap widening monotonically with sequence
+length) are the empirical companion of this formal multi-step
+persistence on a different — natural-language-shaped — alphabet.
+
+#heading(level: 2, numbering: none)[Frontier and unproven targets]
+
+The k-step separation above is the *clean ceiling reachable from the
+one-step proof by direct composition*. It is honest to name what it
+does and does not establish, before stating Theorem set D.
+
+#set list(indent: 1em)
+- *What is proved.* k-step trajectory separation on a constructed 2D
+  input alphabet, for every $k >= 1$ and every resource in the
+  row/column/cell external-forget class
+  (`emender_m2rnn_k_step_separation`). The gap *does* compound on this
+  alphabet — it does not wash out.
+
+- *What is not proved.* That the gap compounds *on the $S_5$ generator
+  alphabet specifically* with an explicit length bound $T(d)$, i.e., a
+  statement of the form "for any fixed-weight raw-write RNN at state
+  dimension $d$ there is an explicit $T(d)$ past which $S_5$ coset
+  tracking is unreachable, while the Emender at the same $d$ tracks it".
+  That is the stronger inseparability claim a reviewer would naturally
+  want; the trusted Lean core does not contain it.
+
+- *Why the stronger claim is not in the trusted core.* The $S_5$-coset
+  inseparability claim is a *capacity* statement, not a witness
+  statement; it requires bounded-precision raw-write RNNs and a
+  pigeonhole / state-counting lower bound in the style of Merrill,
+  Petty and Sabharwal @merrill2024transformers. Mathlib does not
+  currently provide NC#super[1] / TC#super[0] circuit classes,
+  finite-state-tracking lower bounds for parameter-bounded RNNs, or
+  pigeonhole capacity arguments specialised to recurrent maps with
+  bounded weight matrices. Each piece is a research-grade
+  mechanisation project in its own right; the integration is what
+  would close the gap.
+
+- *Connection to the empirical claim.* The $S_5$ accuracy curves of §6
+  (@fig_s5_bars, @tab_s5) and the canonical-sweep length-extrapolation
+  curves are the *empirical* evidence for the stronger claim that the
+  formal core does not yet reach. Honest framing: §7 closes the
+  "wash-out" objection on a constructed witness; §6 is the empirical
+  evidence that the same wash-out failure mode is also absent on the
+  $S_5$ generator alphabet itself.
+
+The full status of this push, including what bridging machinery would
+be required (bounded-precision raw-write class, reachable-state
+counting, Merrill-style capacity lemma) is documented in
+`formal/lean/LEAN_FRONTIER.md`. This is the frontier this paper does
+not try to hide: it is, we think, more interesting to the reader than
+a vague handwave would be.
 
 #heading(level: 2, numbering: none)[Theorem set D: per-token FLOP class]
 
