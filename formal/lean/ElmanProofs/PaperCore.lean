@@ -3,6 +3,7 @@ Copyright (c) 2026 Elman-Proofs Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import ElmanProofs.Architectures.M2RNNComparison
+import ElmanProofs.Architectures.MultiStepSeparation
 import ElmanProofs.Architectures.OnlineMemory
 import ElmanProofs.Architectures.RecurrentResourceFormalism
 import ElmanProofs.Expressivity.E88ExceedsE1HCapacity
