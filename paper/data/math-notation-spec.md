@@ -450,9 +450,59 @@ Numbered hypotheses (i), (ii), (iii) when three or more; inline "and"
 otherwise. The machine-verification footnote sits at the end of the
 theorem statement, before the proof begins.
 
-### D.9 Status of D.1–D.8
+### D.9 Full prose proof of F1 (preserved for blueprint companion reuse)
+
+This proof was rendered under the original task scope (companion-verbose
+form). The author's scope correction moved full proofs out of the in-paper
+artifact; the proof is preserved here so the blueprint companion task can
+adopt it directly without redoing the derivation.
+
+```typst
+*Proof.* The bound $tanh'(x) = 1 - tanh^2(x)$ is the load-bearing identity.
+
+By hypothesis (i), $abs(tanh(Z)) > 1 - epsilon$, so
+$tanh^2(Z) > (1 - epsilon)^2$ and therefore
+$
+  1 - tanh^2(Z) < 1 - (1 - epsilon)^2 = 2 epsilon - epsilon^2 < 2 epsilon.
+$
+
+For any $x$ on the closed interval between $Z$ and $Z + delta$, the
+1-Lipschitz property of $tanh$ (which follows from $abs(tanh'(x)) <= 1$)
+gives $abs(tanh(x) - tanh(Z)) <= abs(x - Z) <= abs(delta) <= M$. Combined
+with the reverse triangle inequality,
+$
+  abs(tanh(x)) >= abs(tanh(Z)) - M > (1 - epsilon) - M = 1 - (epsilon + M).
+$
+Hypothesis (iii) guarantees $1 - (epsilon + M) > 0$, so this is a strict
+lower bound away from zero. Applying the same algebraic step that produced
+the $tanh^2(Z)$ bound, now with $tanh^2(x)$ in place of $tanh^2(Z)$ and
+$epsilon + M$ in place of $epsilon$, gives
+$
+  1 - tanh^2(x) < 2 (epsilon + M).
+$
+
+By the mean value theorem applied to $tanh$ on the interval between $Z$
+and $Z + delta$, there exists $xi$ in that interval with
+$
+  tanh(Z + delta) - tanh(Z) = tanh'(xi) dot delta = (1 - tanh^2(xi)) dot delta.
+$
+Taking absolute values and combining with the bound on $1 - tanh^2(xi)$ above,
+$
+  abs(tanh(Z + delta) - tanh(Z)) = abs(1 - tanh^2(xi)) dot abs(delta)
+    < 2 (epsilon + M) abs(delta).
+$
+The non-strict bound in the statement absorbs the boundary case
+$delta = 0$. $square$
+```
+
+The Lean source of record is
+`ElmanProofs.Architectures.EmenderLatching.emender_saturation_insensitivity`.
+
+### D.10 Status of D.1–D.9
 
 These items were drafted under the original task scope. The author's
 scope correction moved them to the blueprint companion. The companion
 task (TBD task ID) will adopt or revise them; treat the text above as a
-starting draft, not a finalised spec.
+starting draft, not a finalised spec. D.9 is the only block whose loss
+would have required redoing prose-proof work, so it is preserved verbatim
+from the f7444c2 draft.
