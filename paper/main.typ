@@ -68,32 +68,33 @@ CMA-ES configs, and the Triton kernel released.
     ),
   ),
   abstract: [
-    *Emendation* is an update-rule innovation for nonlinear recurrent
-    state: at each step the model reads what memory predicts at the
-    addressed key, computes the prediction error, and writes the
-    *correction* against the existing slot rather than a raw additive
-    overwrite — $S <- tanh(d S + k(v - S^T k)^T)$. We demonstrate
-    emendation in the attention-free, time-serial recurrent setting
-    where comparisons are cleanest, by training the *Emender* (this
-    work) and the raw-write *M²RNN-CMA* baseline at 1.27–1.35 B
-    parameters on The Pile, alongside the linear-recurrent baseline
-    *Gated DeltaNet*. Each architecture is tuned under per-architecture
-    CMA-ES. All three land in the same loss-vs-wallclock band:
-    *nonlinearity in time is not a cost* at this scale. We recover
-    throughput on the width axis via *multi-programming* — 22,200
-    small independent recurrent programs per token at the production
-    shape, with the time loop kept serial inside each. The Emender
-    trains consistently ahead of M²RNN-CMA across the sampled window;
-    a one-step representability separation between the two update
-    rules and its $k$-step extension for every $k >= 1$ — both
-    proved in Lean 4 (§7) and observed empirically on
-    capacity-overparameterised state-tracking probes ($S_5$, $S_3$). Emendation is one response to the recurrent
-    state-tracking problem; hybrid architectures that recover state
-    tracking by interleaving attention with recurrent state (M²RNN,
-    Titans, Griffin, OLMo-Hybrid) are a complementary response. We
-    will release Emender checkpoints together with M²RNN-CMA and the
-    GDN baseline, the per-architecture CMA-ES configurations, and the
-    Triton multi-programming kernel on HuggingFace at publication.
+    Recurrent language models with nonlinearity in time exist in the
+    literature but have not been trained at scale. The prevailing
+    assumption in sequence modeling is that linearizing the recurrence
+    is sufficient, and where it is not, hybrid attention layers recover
+    what is missing. Mathematically, nonlinear-in-time recurrence has
+    expressive capacity not shared by linear-in-time recurrence, but no
+    architecture supporting nonlinearity in time has been cheap enough
+    to train at the scale where this difference becomes empirically
+    observable. Here we show that parallelizing across the model axis
+    rather than the time axis lets serial nonlinear-in-time recurrence
+    train as fast as current best linear-in-time models. We trained a
+    1.27 billion parameter pure-nonlinear-recurrent language model on
+    The Pile. It matches the wallclock loss band of Gated DeltaNet, a
+    frontier linear-recurrent baseline, while replicating 22,200
+    independent small recurrent programs per token. The architecture,
+    the Emender, combines delta correction over a $d times d$ matrix
+    memory with a tanh nonlinearity that bounds and latches each
+    update. The combination of delta correction with nonlinear-in-time
+    state, rather than either ingredient alone, is what is new. In a
+    trusted Lean 4 core we prove that delta-correcting and raw-write
+    update families separate at one step and at every $k$-step
+    composition on a constructed witness alphabet at matched per-token
+    FLOP cost. In the same core we prove saturation insensitivity,
+    sign-preserving hold, and counter-delta release — the latching
+    half of the primitive. At parameter-matched 8M scale the Emender
+    reaches 0.79 accuracy on the $S_5$ word problem against 0.36 for
+    Gated DeltaNet and 0.22 for a raw-write pure-recurrent comparator.
   ],
   keywords: (
     "recurrent neural networks",
