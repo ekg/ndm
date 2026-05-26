@@ -1,4 +1,4 @@
-# Figure 3 Snapshot — As of 2026-05-24
+# Figure 3 Snapshot — As of 2026-05-26
 
 Training is **in progress**. All numbers are instantaneous snapshots from the
 live training logs; curves will be updated as training continues. Do not cite
@@ -11,27 +11,30 @@ these results without re-running `smooth.py` to regenerate with current logs.
 All runs use: dataset = Pile (pile.txt, p50k_base tokenizer), context = 2048 tokens,
 optimizer = schedule-free AdamW, bf16.
 
-| Model | Params | Step | Loss (nats) | Bits/byte† | Tokens seen | ~FLOPs‡ | GPU hours§ |
-|-------|--------|------|-------------|------------|-------------|---------|-----------|
-| E88/NDM | 1.273B | 1,035,000 | 2.6631 | 0.960 | 10.60B | 8.10 × 10¹⁹ | ~377 |
-| FLA-GDN | 1.352B | 1,370,800 | 2.6768 | 0.965 | 11.23B | 9.11 × 10¹⁹ | ~382 |
-| Mamba2 | 0.934B | 1,862,300 | 2.7073 | 0.977 | 15.26B | 8.55 × 10¹⁹ | ~382 |
-| M2RNN-CMA | 1.307B | 958,350 | 2.7662 | 0.998 | 9.81B | 7.70 × 10¹⁹ | ~343 |
+| Model | Params | Step | Loss (nats/tok) | Bits/byte† | Tokens seen | ~FLOPs‡ | GPU hours§ |
+|-------|--------|------|-----------------|------------|-------------|---------|-----------|
+| E88/NDM | 1.273B | 1,212,000 | 2.6632 | 0.9805 | 12.41B | 9.48 × 10¹⁹ | ~442 |
+| FLA-GDN | 1.352B | 1,598,550 | 2.6484 | 0.9751 | 13.10B | 1.06 × 10²⁰ | ~447 |
+| Mamba2 | 0.934B | 1,982,400 | 2.6919 | 0.9911 | 16.24B | 9.10 × 10¹⁹ | ~407 |
+| M2RNN-CMA | 1.307B | 1,141,850 | 2.6776 | 0.9858 | 11.69B | 9.17 × 10¹⁹ | ~408 |
 
-†  Bits/byte = (loss_nats / ln 2) / 4.0, where 4.0 bytes/token is estimated
-   for p50k_base on English Pile text. This estimate is approximate (±5%);
-   the true ratio depends on the exact text distribution.
+†  Bits/byte = nats/token × log2(e) / bytes/token, with
+   bytes/token = 3.918625 (canonical 2000-sample sweep of `p50k_base` on
+   The Pile at `chunk_tokens=2048`; pinned at
+   `scripts/estimate_tokenizer_bytes_per_token.json`). The figure
+   applies this conversion at the display step in `plot_normalized.py`;
+   CSVs continue to record the raw `loss` and `smooth_*` columns in
+   their native nats/token units.
 
 ‡  Total FLOPs = 6 × N_params × B × T × step, where B = batch size, T = 2048.
    This is the standard dense-op approximation (2N forward, 4N backward).
    Recurrent state-update FLOPs in gated SSMs are not separately counted;
    the formula may underestimate total compute for E88 and M2RNN variants.
 
-§  GPU hours are estimated from the training logs. For runs that span
-   multiple segments (original run + resumed run), the hours are reconstructed
-   by stitching log segments using tok/s integration for the older log format
-   (pre-2026-05-11 runs lacked elapsed_h fields) and elapsed_h for newer ones.
-   Numbers are approximate ±5%.
+§  GPU hours are taken from the monotonic wallclock reconstructed by
+   `smooth.py` (`elapsed_h` field for newer log segments; tok/s
+   integration for the older pre-2026-05-11 format), and are accurate to
+   within a few percent.
 
 ---
 
@@ -61,7 +64,7 @@ optimizer = schedule-free AdamW, bf16.
 - Architecture: Level mamba2 (Mamba2 SSM).
   Config: dim=2048, depth=32, expansion=3, mamba_d_state=160, lr=3.502e-4.
 - Training started 2026-05-07. Resumed from checkpoint at step 432,000 on
-  2026-05-11; continuous since.
+  2026-05-11; continuous since. The active log last advanced 2026-05-25.
 - Parameter count (934M) is below the 1.27B target; this is the CMA-ES
   winner at this architecture family and scale.
 - Mamba2 achieves more steps/hour due to parallel scan efficiency (tok/s ≈ 11,250
@@ -75,7 +78,7 @@ optimizer = schedule-free AdamW, bf16.
   at step 123,000 on 2026-05-11; continuous since.
 - Uses XMA kernels from the accelerated-model-architectures package.
 - Batch size: 5 (effective tokens/step = 10,240).
-- GPU hours (343h) reflect the M2RNN-CMA run's independent start date.
+- GPU hours (~408h) reflect the M2RNN-CMA run's independent start date.
 
 ---
 
@@ -108,9 +111,16 @@ optimizer = schedule-free AdamW, bf16.
 
 ## Smoothed loss columns in CSVs
 
-`smooth_5k`  — 5,000-step centered moving average of raw loss
+`smooth_5k`  — 5,000-step centered moving average of raw loss (nats/token)
 `smooth_10k` — 10,000-step centered moving average (used in Figure 3)
 `smooth_50k` — 50,000-step centered moving average
 
 The window is computed in log-entry index space. With log_every=50, a 10K-step
 window corresponds to ≈200 log entries per side.
+
+The figure renderer (`plot_normalized.py`) converts `smooth_10k` to bits/byte
+at the display step using the canonical bytes/token; the CSV columns
+themselves remain in their native nats/token units (the `bits_per_base`
+column written by `smooth.py` uses an older 4.0-bytes/token approximation
+and is preserved for backward compatibility; see the `plot_normalized.py`
+header for the canonical value the figure uses).

@@ -858,18 +858,22 @@ across families.
   image("results/figure_2/figure_2_draft.png", width: 95%),
   caption: [
     *Loss versus wallclock for the three 1.27–1.35 B-parameter
-    pure-recurrent racers, as of 2026-05-24.* Schedule-free AdamW on
+    pure-recurrent racers, as of 2026-05-26.* Schedule-free AdamW on
     The Pile with a 2048-token context. Curves are 10K-step centred
-    moving averages of raw training loss (nats per token). Emender is at
+    moving averages of training loss in bits per byte; the nats/token
+    $arrow$ bits/byte conversion uses the canonical
+    $"bytes/token" = 3.92$ for `p50k_base` on The Pile (pinned in
+    `scripts/estimate_tokenizer_bytes_per_token.json`, methodology
+    sentence in this section). Emender is at
     1.273 B parameters; M²RNN-CMA at 1.307 B; GDN at 1.352 B. Each
-    model has trained 8–15 GPU-days at this recording; the
+    model has trained 14–19 GPU-days at this recording; the
     $tilde 14$-day per-architecture training extent is the standard
     unit at this scale class. Training continues. *Panel A:* full
     curve on
     log-wallclock from h = 1. *Panel B:* tail (h ≥ 40) on linear
     wallclock. Emender and GDN share a single loss band through the bulk
     of training, with leadership trading between them at the
-    fractional-nat scale; the two curves are nearly co-linear.
+    fractional-bit-per-byte scale; the two curves are nearly co-linear.
     M²RNN-CMA has higher loss than the other two across the sampled
     window. The paper-shape M²RNN baseline (not shown) diverged at
     step 8,400. Color convention used throughout the paper: Emender =

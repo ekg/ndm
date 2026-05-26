@@ -7,13 +7,19 @@ figure_2_draft.png.
 
 Normalized presentation conventions (shared with cma_flop_rate/plot.py):
   x-axis : wall-clock training hours (log scale)
-  y-axis : training loss in nats per token (10K-step centred moving average)
+  y-axis : training loss in bits per byte (10K-step centred moving average)
+           BPB = nats/token × log2(e) / bytes_per_token
+           bytes/token = 3.918625 (canonical 2000-sample sweep on Pile,
+           p50k_base, chunk_tokens=2048; see
+           scripts/estimate_tokenizer_bytes_per_token.json)
   colors : NΔM = #1f77b4 (blue)
            GDN = #ff7f0e (orange)
            M²RNN-CMA = #d62728 (red) — emphasises strict-above (worse) position
 """
 from __future__ import annotations
 import csv
+import json
+import math
 from pathlib import Path
 
 import matplotlib
@@ -22,6 +28,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 OUT = Path(__file__).parent
+REPO = OUT.parents[2]
+
+# Canonical bytes-per-token (Pile, p50k_base, chunk_tokens=2048, 2000-sample sweep).
+# Pinned by v22-bpb-fix; sourced from scripts/estimate_tokenizer_bytes_per_token.json.
+_TOKENIZER_JSON = REPO / "scripts" / "estimate_tokenizer_bytes_per_token.json"
+with open(_TOKENIZER_JSON) as _f:
+    _CANON = json.load(_f)
+BYTES_PER_TOKEN = float(_CANON["mean_bytes_per_token"])  # 3.918625
+NATS_TO_BPB = math.log2(math.e) / BYTES_PER_TOKEN         # 0.368164
+assert abs(NATS_TO_BPB - _CANON["bits_per_byte_per_nat_per_token"]) < 1e-9
 
 # Shared palette across all loss-vs-X panels in the paper.
 COLORS = {
@@ -48,6 +64,12 @@ PARAMS = {
 
 
 def load(path: Path):
+    """Return (wallclock_h, bpb) where bpb is the BPB conversion of smooth_10k.
+
+    Underlying CSVs remain in native units (nats/token); the BPB conversion
+    happens here at the display step so the training-log artefacts are not
+    rewritten.
+    """
     xs, ys = [], []
     with open(path) as f:
         for r in csv.DictReader(f):
@@ -55,7 +77,7 @@ def load(path: Path):
             if h <= 0:
                 continue
             xs.append(h)
-            ys.append(float(r["smooth_10k"]))
+            ys.append(float(r["smooth_10k"]) * NATS_TO_BPB)
     return np.array(xs), np.array(ys)
 
 
@@ -77,7 +99,7 @@ def main():
             zorder=5 if name == "M2RNN-CMA" else 3,
         )
         axA.annotate(
-            f"{ys[-1]:.2f}",
+            f"{ys[-1]:.3f}",
             (xs[-1], ys[-1]),
             xytext=(6, 0),
             textcoords="offset points",
@@ -86,10 +108,10 @@ def main():
             va="center",
         )
     axA.set_xscale("log")
-    axA.set_xlim(1.0, 500.0)
-    axA.set_ylim(2.55, 4.7)
+    axA.set_xlim(1.0, 520.0)
+    axA.set_ylim(0.94, 1.74)
     axA.set_xlabel("Wall-clock training hours (log scale)", fontsize=11)
-    axA.set_ylabel("Training loss (nats / token, 10K-step smoothed)", fontsize=11)
+    axA.set_ylabel("Training loss (bits / byte, 10K-step smoothed)", fontsize=11)
     axA.set_title("A. Full curve (log-x)", fontsize=11)
     axA.legend(fontsize=9, loc="upper right", framealpha=0.95)
     axA.grid(True, which="both", alpha=0.3)
@@ -117,11 +139,11 @@ def main():
                 color=COLORS[name],
                 va="center",
             )
-    axB.set_xlim(tail_lo, 460.0)
-    axB.set_ylim(2.63, 3.05)
+    axB.set_xlim(tail_lo, 480.0)
+    axB.set_ylim(0.968, 1.123)
     axB.set_xlabel("Wall-clock training hours", fontsize=11)
-    axB.set_ylabel("Training loss (nats / token)", fontsize=11)
-    axB.set_title("B. Tail (h ≥ 40) — strict wall-clock order is M²RNN-CMA > GDN ≈ NΔM", fontsize=10)
+    axB.set_ylabel("Training loss (bits / byte)", fontsize=11)
+    axB.set_title("B. Tail (h ≥ 40) — wall-clock order at the tail", fontsize=10)
     axB.grid(True, which="both", alpha=0.3)
 
     out = OUT / "figure_2_draft.png"
