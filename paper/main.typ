@@ -450,15 +450,20 @@ that comes from prefix tracking *per se* rather than from non-solvability.
 
 We introduce the Emender#footnote[The name arrived as a correction to a
 prior internal handle; the architecture emended its own name by the same
-process it performs on memory.] architecture family, built from emender
-layers: matrix-state recurrent layers that read the current state,
-compute the prediction error, and write the delta correction. Each Emender layer maintains $H$ independent heads. Each head $h$ owns a
-matrix state $S_h in RR^(N times V)$; at production scale, $N = V = 32$.
-The trusted-core theorems of §7 use $d$ for the common matrix dimension;
-with $d = N = V = 32$, the matrix memory is $d times d$.
-Per token, the input gives projections $k_h, q_h in RR^N$,
-$v_h in RR^V$, and a scalar input-dependent decay
-$d_h in (0,1)$ and gate $g_h in RR^V$. The recurrent step is
+process it performs on memory.] architecture family. Its primitive is an
+emender layer: a matrix-state recurrent layer that reads the current state,
+computes the prediction error, and writes the delta correction. A concrete
+family member fixes the head count, state-tile size, depth, and language-model
+wrapper; E88 is the 1.27 B instance evaluated throughout the paper.
+
+Each emender layer maintains $H$ independent heads. Each head $h$ owns a
+matrix state $S_h in RR^(N times V)$. The trusted-core theorems of §7 use $d$
+for the common matrix dimension; in E88, $d = N = V = 32$, so each head's
+memory is a $32 times 32$ tile. Per token, the input gives projections
+$k_h, q_h in RR^N$, $v_h in RR^V$, and a scalar input-dependent decay
+$d_h in (0,1)$ and gate $g_h in RR^V$. The display below writes one head's
+full step in execution order: normalise the addresses, read at $k_h$, form the
+retrieval error, update the bounded state, and gate the read at $q_h$.
 
 $
 k_h &<- "silu"(k_h) / norm("silu"(k_h))_2 quad ("L"^2 "-normalised key")\
@@ -468,6 +473,23 @@ delta_h &= "silu"(v_h) - r_h \
 S_h &<- tanh(d_h dot S_h + k_h delta_h^T) \
 y_h &= "silu"(g_h) dot.o S_h^T q_h
 $
+
+The first two lines make the addressing bounded, the middle lines make the
+write a correction against the content already read, and the final line gates
+only the read output. This is the emender-layer primitive; E88 repeats it
+across a concrete residual stack rather than changing the per-head equation.
+
+E88 instantiates the Emender family with dim = 1664, depth = 12, $H = 370$
+heads per layer, $N = V = 32$, expansion = 1.0, batch size 5,
+`chunk_size=2048`, and 1.273 B parameters. Lean pins the trusted geometry as
+`emender_1p27B = emender 12 370 32`, proving 22,200 programs per token at
+batch size 5 and `370 * (32 * 32)` recurrent state scalars per layer. The
+implementation wrapper is a prenorm residual stack with a final norm and a
+tied LM-head embedding. Heads do not share recurrent state; projections for
+$q,k,v$, decay, and the output gate are learned per layer, `A_log` and
+`dt_bias` are learned per head with weight-decay exemptions, the recurrent
+state is fixed at zero when no hidden state is carried in, there is no output
+`RMSNorm` inside the recurrent layer, and the write path is not gated.
 
 #figure(
   kind: image,
@@ -557,16 +579,17 @@ $
   ],
 ) <fig_arch>
 
-Four ingredients are load-bearing.
+For the Emender family, four ingredients are load-bearing; E88 uses all four
+in the instance above.
 
 #set enum(numbering: "(a)")
 
 + *Bounded matrix state via $tanh$ on $S$.* Linear-in-state recurrences
   cannot pass the Siegelmann–Sontag boundary even in principle; placing
   the non-linearity on the state itself, not only on a gate or the
-  output, is what makes the Emender nonlinear-state.
+  output, is what makes an emender layer nonlinear-state.
 
-+ *Delta-correcting write $v - S^T k$.* The model reads what memory
++ *Delta-correcting write $v - S^T k$.* The emender layer reads what memory
   predicts at address $k$, computes the prediction error $delta$,
   and writes the correction. With an orthonormal key family this gives
   exact overwrite at one slot while preserving the others; with
@@ -583,9 +606,9 @@ Four ingredients are load-bearing.
   memory revisable when the data demand it. §7's Theorem set F
   (saturation insensitivity, sign-preserving hold, counter-delta
   release) formalises all three as slot-wise statements on the full
-  Emender update.
+  emender-layer update.
 
-+ *Many small heads, not one large matrix.* Production Emender at 1.27 B
++ *Many small heads, not one large matrix.* E88 at 1.27 B
   uses $H = 370$ heads of $32 times 32$ each (Lean-witnessed:
   `RecurrentResourceFormalism.emender_1p27B_programs_per_batch_token`,
   yielding 22,200 independent programs per token at batch size 5).
@@ -595,7 +618,7 @@ Four ingredients are load-bearing.
 
 #heading(level: 2, numbering: none)[Parameterisation choices]
 
-Decay is parameterised in log-space following Mamba2: per head we learn
+In E88, decay is parameterised in log-space following Mamba2: per head we learn
 $A_(log) in RR$ and a scalar bias $delta_(text("bias"))$, then compute
 $d = exp(-exp(A_(log)) dot "softplus"(alpha(x) + delta_(text("bias"))))$,
 with `A_log` and `dt_bias` excluded from weight decay. Computation is
@@ -609,25 +632,29 @@ gated; the gate `silu(g)` is applied to the read output only.
 
 #heading(level: 2, numbering: none)[The 1.27 B production stack]
 
-The 1.27 B parameter Emender stack used throughout the paper has dim = 1664,
-depth = 12, $H = 370$, $N = V = 32$, with a tied LM-head embedding and
-prenorm residual blocks. The reference implementation and fused Triton
-recurrence kernel sources live under `ndm/models/` and `ndm/triton/`;
-file paths are recorded in the Appendix.
+The figure and §4 use the same trusted geometry. At batch size 5, depth 12
+and $H = 370$ give $12 times 370 times 5 = 22,200$ independent recurrent
+programs per token; each program carries its own $32 times 32$ state tile. The
+reference implementation and fused Triton recurrence kernel sources live under
+`ndm/models/` and `ndm/triton/`; file paths are recorded in the Appendix.
 
 #heading(level: 2, numbering: none)[Ablation by architecture: isolating the write rule]
 
 Three properties are candidates for the load-bearing differentiator in
 state-tracking: *matrix state*, *temporal nonlinearity on that state*,
 and *delta correction in the write*. The closest update-rule comparator
-to the Emender in the literature is M²RNN @m2rnn2026, whose nonlinear
-matrix-state update is
+to the Emender in the literature is M²RNN @m2rnn2026. Its nonlinear
+matrix-state update has two parts, so the display keeps them together: the
+first line constructs the nonlinear candidate, and the second mixes that
+candidate back through the forget gate.
 
 $
 Z_t &= tanh(H_(t-1) W + k_t v_t^T)\
 H_t &= f_t H_(t-1) + (1 - f_t) Z_t.
 $
 
+That split is exactly what E88 lacks: its carry sits inside the bounded
+delta-correcting update, and its gate appears only on the read output.
 M²RNN is *nonlinear-state* by the criterion of §2, since $H_(t-1)$
 appears inside $tanh$ via $H_(t-1) W$, but the write into $H$ is a raw
 outer product $k v^T$ rather than a delta correction. A three-row ablation
@@ -1465,7 +1492,7 @@ the Emender under matched per-architecture CMA-ES. The empirical separation in
 §6 and the formal one-step resource separation in §7 quantify the
 update-rule difference between delta-correcting (the Emender) and raw-write
 (M²RNN-CMA) within the pure-nonlinear-recurrent class. Mishra et al.
-additionally report hybrid M²RNN configurations favourably against
+also report hybrid M²RNN configurations favourably against
 Mamba2 and Gated DeltaNet hybrids at matched parameter and token
 budgets under a uniform fixed-hyperparameter protocol (their §5.2);
 those hybrid configurations fall outside the pure-nonlinear-recurrent
