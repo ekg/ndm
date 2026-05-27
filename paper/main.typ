@@ -334,7 +334,7 @@ the delta-correction line from Widrow–Hoff through fast-weight
 programmers to DeltaNet; §9 limitations; §10 conclusion; §11 testable
 predictions; §12 future work. The v0.1 release target for the E88
 checkpoint and loading code is
-`https://huggingface.co/poieticpbc/emender-e88-1.27b/tree/v0.1`, with
+`https://huggingface.co/poietic-pbc/emender-e88-1.27b/tree/v0.1`, with
 companion M²RNN-CMA and GDN baseline artifacts, the per-architecture
 CMA-ES configurations, and the Triton multi-programming kernel in the
 same release bundle.
@@ -1730,7 +1730,7 @@ $S_5$ probe. The trusted Lean 4 core has no
 
 *Release.* The v0.1 release target for the E88 checkpoint and loading
 code is
-`https://huggingface.co/poieticpbc/emender-e88-1.27b/tree/v0.1`.
+`https://huggingface.co/poietic-pbc/emender-e88-1.27b/tree/v0.1`.
 Companion artifacts cover the M²RNN-CMA checkpoint (CMA-reshaped
 raw-write), the Gated DeltaNet baseline, the per-architecture CMA-ES
 configurations, the training protocol, and the Triton multi-programming
