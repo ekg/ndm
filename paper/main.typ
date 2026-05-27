@@ -291,11 +291,12 @@ technique not bound to that arena.
   binding constraint. The substrate puts from-scratch foundation-scale
   training within reach of a single-node configuration.
 
-+ *Synthesis: Emender 88 (E88).* We use *emender* (lowercase) for the
-  layer primitive, *Emender* for the architecture family, and *E88* (or
-  Emender 88) for the 1.27 B production instance evaluated here. E88
-  integrates (1)+(2)+(3)+(4)+(5) and is the first foundation-model-scale
-  demonstration of delta-correcting pure-nonlinear recurrence.
++ *Synthesis: Emender 88 (E88).* An *emender* is a bounded matrix-state
+  recurrent layer with a delta-correcting write. The *Emender* is the
+  architecture family obtained by stacking emender layers; *E88* is the
+  1.27 B production instance evaluated here, integrating
+  (1)+(2)+(3)+(4)+(5) as the first foundation-model-scale demonstration
+  of delta-correcting pure-nonlinear recurrence.
 
 #set enum(numbering: "(a)")
 
@@ -449,9 +450,9 @@ that comes from prefix tracking *per se* rather than from non-solvability.
 
 We introduce the Emender#footnote[The name arrived as a correction to a
 prior internal handle; the architecture emended its own name by the same
-process it performs on memory.], a pure nonlinear recurrent language
-model whose update rule reads the current state, computes the prediction
-error, and writes the delta correction. Each Emender layer maintains $H$ independent heads. Each head $h$ owns a
+process it performs on memory.] architecture family, built from emender
+layers: matrix-state recurrent layers that read the current state,
+compute the prediction error, and write the delta correction. Each Emender layer maintains $H$ independent heads. Each head $h$ owns a
 matrix state $S_h in RR^(N times V)$; at production scale, $N = V = 32$.
 The trusted-core theorems of §7 use $d$ for the common matrix dimension;
 with $d = N = V = 32$, the matrix memory is $d times d$.
