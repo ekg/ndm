@@ -291,12 +291,11 @@ technique not bound to that arena.
   binding constraint. The substrate puts from-scratch foundation-scale
   training within reach of a single-node configuration.
 
-+ *Synthesis: Emender 88 (E88).* "Emender 88" (E88) is the specific
-  version handle within the Emender family for the integration of
-  (1)+(2)+(3)+(4)+(5) at 1.27 B parameters. The contribution is the
-  integration: each component is small or known; together they
-  constitute the first foundation-model-scale demonstration of
-  delta-correcting pure-nonlinear recurrence.
++ *Synthesis: Emender 88 (E88).* We use *emender* (lowercase) for the
+  layer primitive, *Emender* for the architecture family, and *E88* (or
+  Emender 88) for the 1.27 B production instance evaluated here. E88
+  integrates (1)+(2)+(3)+(4)+(5) and is the first foundation-model-scale
+  demonstration of delta-correcting pure-nonlinear recurrence.
 
 #set enum(numbering: "(a)")
 
@@ -721,8 +720,8 @@ and M²RNN-CMA) satisfy the same multi-programming predicate at 1.27 B
 #heading(level: 2, numbering: none)[The 1.27 B Emender shape under multi-programming]
 
 A modern GPU exposes thousands of independent streaming multiprocessors,
-each able to run a small program in registers and shared memory. The
-Emender 1.27 B stack invites 370 such programs per layer per batch element
+each able to run a small program in registers and shared memory. E88
+invites 370 such programs per layer per batch element
 (370 heads $times$ batch element); with depth 12 and batch size 5 this
 is 22,200 small independent recurrent programs per layer per token.
 Each program is a $32 times 32$ state tile that fits in
@@ -858,7 +857,7 @@ and update rule.
 #figure(
   image("results/figure_2/figure_2_draft.png", width: 95%),
   caption: [
-    *Emender and Gated DeltaNet share a single sub-1-bpb loss band on
+    *E88 and Gated DeltaNet share a single sub-1-bpb loss band on
     The Pile under matched per-architecture CMA-ES; M²RNN-CMA trails
     the band across the sampled window.* Schedule-free AdamW on The
     Pile with a 2048-token context. Curves are 10K-step centred
@@ -866,13 +865,13 @@ and update rule.
     $arrow$ bits/byte conversion uses the canonical
     $"bytes/token" = 3.92$ for `p50k_base` on The Pile (pinned in
     `scripts/estimate_tokenizer_bytes_per_token.json`, methodology
-    sentence in this section). Emender is at
+    sentence in this section). E88 is at
     1.273 B parameters; M²RNN-CMA at 1.307 B; GDN at 1.352 B; each
     model has trained 14–19 GPU-days at this recording; the
     $tilde 14$-day per-architecture training extent is the standard
     unit at this scale class. *Panel A:* full curve on log-wallclock
     from h = 1. *Panel B:* tail (h ≥ 40) on linear wallclock.
-    Leadership between Emender and GDN trades through training at the
+    Leadership between E88 and GDN trades through training at the
     fractional-bit-per-byte scale; the two curves are nearly
     co-linear. M²RNN-CMA has higher loss than the other two across
     the sampled window. The paper-shape M²RNN baseline (not shown)
@@ -882,12 +881,12 @@ and update rule.
   ],
 ) <fig_lm_racers>
 
-After $tilde 14$ wall-clock days of training, the Emender reaches
+After $tilde 14$ wall-clock days of training, E88 reaches
 0.979 bits per byte on The Pile; Gated DeltaNet reaches 0.987;
-M²RNN-CMA reaches 1.02. The Emender and GDN sit on the same sub-1-bpb
+M²RNN-CMA reaches 1.02. E88 and GDN sit on the same sub-1-bpb
 band: leadership trades between them through training, and at no
 sampled point do the two separate by more than a small fraction of a
-nat. The corresponding training losses are 2.66 nats/token (Emender,
+nat. The corresponding training losses are 2.66 nats/token (E88,
 step 1,035,000), 2.68 (GDN, step 1,371,000), and 2.77 (M²RNN-CMA, step
 958,000). Under the training tokenizer (`p50k_base` BPE) on The Pile,
 mean bytes per token is 3.92 over a 2000-sample sweep at the training
@@ -895,7 +894,7 @@ mean bytes per token is 3.92 over a 2000-sample sweep at the training
 `scripts/estimate_tokenizer_bytes_per_token.py`, pinned output at
 `scripts/estimate_tokenizer_bytes_per_token.json`), so
 $"bpb" = "nats/token" times log_2(e) / "bytes/token" approx "nats/token" times 0.368$.
-Within the pure-nonlinear-recurrent class, M²RNN-CMA trails the Emender
+Within the pure-nonlinear-recurrent class, M²RNN-CMA trails E88
 across the sampled window. The two robust empirical claims supported
 by @fig_lm_racers are therefore (i) *(class-level)* a
 pure-nonlinear-recurrent language model trains to sub-1-bpb on The
@@ -1098,7 +1097,7 @@ raw-write rule, with capacity non-binding by the §6 floor argument.
 For capability beyond loss numbers we evaluate the three 1.27–1.35 B-band
 models on a 300-item multi-choice continuation harness sampled from
 ARC-C/E @arc2018, HellaSwag @hellaswag2019, SciQ @sciq2017, OpenBookQA
-@openbookqa2018, and BoolQ @boolq2019. At the current training budget, the Emender
+@openbookqa2018, and BoolQ @boolq2019. At the current training budget, E88
 reaches 0.367 (random ~0.29), GDN 0.380, and M²RNN-CMA 0.367; all
 three sit within one standard error of one another
 ($"SE" approx 6$ pp at 50 items per task). On a separate reasoning
@@ -1106,7 +1105,7 @@ panel (BIG-Bench Hard @bbh2022, ReCLor @reclor2020, FOLIO @folio2022),
 all three families collapse on multi-step object tracking
 (`tracking_shuffled_objects_7_objects` at 0.10–0.13, near-random) and
 on FOLIO/ReCLor (near-random for all three), with GDN leading
-on formal fallacies and web-of-lies. The Emender's overall reasoning
+on formal fallacies and web-of-lies. E88's overall reasoning
 accuracy (0.319) is within one standard error of M²RNN-CMA (0.336). None
 of the three architectures has crossed the threshold where reasoning
 benchmarks differentiate, consistent with all three acquiring
@@ -1654,12 +1653,12 @@ attention's quadratic cost bites. The omission is scope, not result.
 = Conclusion <sec:conclusion>
 
 We trained a pure-nonlinear-recurrent language model to sub-1-bpb on
-The Pile: the Emender at 0.979 bpb after $tilde 14$ wall-clock days
+The Pile: E88 at 0.979 bpb after $tilde 14$ wall-clock days
 on a single workstation-class GPU. Three pure-recurrent
 architectures received per-architecture CMA-ES at the 1.27–1.35 B
 band (the Emender and M²RNN-CMA, nonlinear in time; Gated DeltaNet,
 linear in time). The two leading curves are co-linear in the shared
-wallclock band (Emender 0.979, GDN 0.987); M²RNN-CMA, the raw-write
+wallclock band (E88 0.979, GDN 0.987); M²RNN-CMA, the raw-write
 pure-recurrent variant, trails at 1.02.
 *Nonlinearity in time is not a cost* for language modelling at this
 scale; the choice of recurrence linearity is washed out by
@@ -1698,7 +1697,7 @@ update solves $S_3$ to ceiling and reaches 0.79 on the non-solvable
 $S_5$ probe. The trusted Lean 4 core has no
 `sorry`/`admit`/`axiom`/`opaque`/`native_decide` in the import closure.
 
-*Release.* We will release on HuggingFace at publication: the Emender
+*Release.* We will release on HuggingFace at publication: the E88
 checkpoint (delta-correcting), the M²RNN-CMA checkpoint (CMA-reshaped
 raw-write), and the Gated DeltaNet baseline. Released alongside are
 the per-architecture CMA-ES configurations, the training protocol,
