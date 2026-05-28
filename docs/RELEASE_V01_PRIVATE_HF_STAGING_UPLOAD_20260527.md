@@ -35,8 +35,13 @@ Commit URLs:
 - `https://huggingface.co/poietic-pbc/m2rnn-cma-1.27b/commit/af3cf2db65dfd14b64a5c030c99156828fdfb958`
 
 At upload time, each repository had branches `staging` and `main`, with
-`staging` containing the full model artifacts, and no tags. The final `v0.1`
-tags now point at the uploaded staging commits listed above.
+`staging` containing the full model artifacts, and no tags. The initial `v0.1`
+tags later pointed at the uploaded staging commits listed above.
+
+2026-05-28 docs-polish update: the private `v0.1` tags were recreated at
+README-only descendants so the release revision includes polished model cards.
+Current `v0.1` SHAs are tracked in
+`docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md`.
 
 ## Auth And Guardrails
 

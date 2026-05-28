@@ -45,7 +45,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/ekg/ndm"
+Repository = "https://github.com/poietic-pbc/emender"
 Provenance = "https://github.com/ekg/elman"
 Proofs = "https://github.com/ekg/elman-proofs"
 

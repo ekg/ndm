@@ -1,233 +1,189 @@
 ---
 license: apache-2.0
-language:
-- en
-tags:
-- rnn
-- language-model
-- nonlinear-rnn
-- state-tracking
-- ndm
-- triton
 library_name: transformers
+pipeline_tag: text-generation
+tags:
+- base-model
+- recurrent-neural-network
+- language-model
+- text-generation
+- the-pile
+- p50k-base
+- trust-remote-code
 ---
 
-# NDM-1.27B
+# {MODEL_NAME} 1.27B
 
-**Nonlinear Delta Memory** (NDM) — a pure nonlinear recurrent language model
-trained to near-convergence at 1.27B parameters.
+{MODEL_NAME} is a raw/base 1.27B-class recurrent language model checkpoint from
+the Emender v0.1 release bundle. It is not instruction-tuned, chat-tuned,
+RLHF-tuned, or safety-tuned. Use it as a base continuation model for research
+and reproduction of the paper results, not as an assistant.
 
-This is the first publicly released checkpoint of a pure nonlinear RNN trained
-at billion-parameter scale. The model uses no attention and no linear-scan
-approximation; the recurrent state update is nonlinear at every step.
+## Links
 
----
+- GitHub repository: <https://github.com/poietic-pbc/emender>
+- v0.1 release hub and checklist:
+  <https://github.com/poietic-pbc/emender/blob/main/docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md>
+- Paper PDF target:
+  <https://github.com/poietic-pbc/emender/releases/download/v0.1/Garrison_2026_Emender.pdf>
+- Paper source:
+  <https://github.com/poietic-pbc/emender/blob/main/paper/main.typ>
+- Refreshed racer source:
+  <https://github.com/poietic-pbc/emender/blob/main/docs/RELEASE_V01_RACER_CHECKPOINT_PIN_20260527.md>
 
-## Architecture
+Related v0.1 model repositories:
 
-### NDM Update Equation
+- Emender/E88: <https://huggingface.co/poietic-pbc/emender-e88-1.27b>
+- GDN: <https://huggingface.co/poietic-pbc/gdn-1.27b>
+- M2RNN-CMA: <https://huggingface.co/poietic-pbc/m2rnn-cma-1.27b>
 
-For one NDM head, the runtime state is a matrix `S ∈ ℝ^{n×v}`. Given input
-projections key `k`, value `v`, query `q`, and decay scalar `d` at time `t`:
+## Model Identity
 
-```
-r_t     = S_{t-1}^T k_t          # read from memory
-delta_t = v_t - r_t              # delta correction
-S_t     = tanh(d_t S_{t-1} + k_t delta_t^T)   # nonlinear write
-y_t     = S_t^T q_t              # read output
-```
+- Identity: `{IDENTITY}`.
+- Architecture: `{ARCHITECTURE}`.
+- Release revision: `v0.1`.
+- Parameter count from smoke construction: `{PARAM_COUNT}`.
+- Raw checkpoint step/loss: `{STEP}` / `{CHECKPOINT_LOSS}`.
+- Tokenizer: `p50k_base`, exported as `PreTrainedTokenizerFast`, vocab size
+  `50,281`.
+- Training/evaluation context: pinned training arg `chunk_size=2048`; the
+  loader reads `chunk_size + 1` tokens so next-token loss uses 2,048 input
+  positions.
+- Custom code: yes. Load with `trust_remote_code=True`.
 
-The tanh bounds the recurrent state, making the update nonlinear. This
-distinguishes NDM from linear recurrent models (Mamba, GLA, DeltaNet) where
-the state update is linear even when input gates are input-dependent.
+Architecture wording by repo:
 
-### Hyperparameters (1.27B checkpoint)
+- Emender/E88: Emender is the update-rule family; an emender layer is the
+  bounded nonlinear matrix-state delta-correction recurrent layer; E88 is the
+  concrete v0.1 1.27B instance with the fused Triton path.
+- GDN: Gated DeltaNet / FLA-GDN baseline from the same matched racer. It is not
+  an Emender layer; it is the strong linear-state gated-delta recurrent
+  baseline.
+- M2RNN-CMA: M2RNN-style raw-write nonlinear matrix-state baseline reshaped by
+  the paper's CMA-ES search pressure. It is not the published paper-default
+  grouped-head M2RNN shape; pinned args use `level=m2rnn` and
+  `m2rnn_paper_shape=false`.
 
-| Parameter | Value |
-|-----------|-------|
-| Model dimension (`dim`) | 2176 |
-| Depth (layers) | 14 |
-| Memory heads per layer (`n_heads`) | 98 |
-| State size per head (`n_state`) | 32 |
-| Value expansion | 1.0 |
-| Output gating | SiLU gate (enabled) |
-| Q/K normalization | L2 + SiLU pre-activation |
-| Decay parameterization | Mamba2-style (`A_log`, `dt_bias`) |
-| Embeddings | Tied (input = output) |
-| Normalization | Pre-layer RMSNorm (ε=1e-6) |
-| Total parameters | ~1.27B |
+## Training Data And Tokenization
 
-### Diagram
+The v0.1 racer checkpoints were trained on The Pile from the local pinned
+corpus path recorded in release docs as `/home/erikg/elman/data/pile.txt`.
+Pinned args in the exported `config.json` and local release docs record
+`tokenizer=p50k_base`, `chunk_size=2048`, bf16 training, ScheduleFree AdamW,
+seed `42`, and architecture-specific hyperparameters.
 
-<!-- TODO: insert architecture diagram from paper/figures/ once available -->
-*Architecture diagram: see the companion paper (link TBD).*
+The source data stream uses ASCII record separator (`\x1e`, byte `0x1e`) between
+documents. This is confirmed by `scripts/build_commapile_mainmix.py` and the
+data loaders. For the pinned v0.1 `p50k_base` training path, `train.py` selects
+`ndm.data.tokenized_dataset.TokenizedStreamDataset`: it samples raw byte
+windows, decodes them to text, and tokenizes with tiktoken using
+`disallowed_special=()`. The record separator is therefore an ordinary token
+when it appears in a sampled window, not a stop token, EOS token, padding token,
+or safety boundary. Under `p50k_base`, `"\x1e"` encodes as token ID `218`.
 
-### Implementation
+Use `\x1e` as the natural document/example delimiter when constructing raw
+continuation prompts that should resemble training boundaries. Do not rely on it
+as an instruction separator.
 
-Production class: `E88FusedLM` in `ndm/models/e88_fused.py`.
+## v0.1 Metrics
 
-Fast path: fused Triton kernel (`ndm/triton/e88_triton_forward.py`,
-`e88_triton_backward.py`). Requires CUDA and bfloat16.
+The current v0.1 language-modeling snapshot metrics come from the refreshed
+racer Figure 2 source recorded on 2026-05-27 in
+`docs/RELEASE_V01_RACER_CHECKPOINT_PIN_20260527.md`. Scores are 10K-step
+smoothed bits per byte on The Pile using the pinned `p50k_base` bytes/token
+estimate.
 
-Fallback: pure PyTorch reference in the same file; functional on CPU but
-substantially slower.
+| Model | HF repo | v0.1 BPB | Source |
+| --- | --- | ---: | --- |
+| Emender/E88 | `poietic-pbc/emender-e88-1.27b` | 0.979 | Refreshed racer Figure 2, 2026-05-27 |
+| GDN | `poietic-pbc/gdn-1.27b` | 0.975 | Refreshed racer Figure 2, 2026-05-27 |
+| M2RNN-CMA | `poietic-pbc/m2rnn-cma-1.27b` | 0.984 | Refreshed racer Figure 2, 2026-05-27 |
 
----
+This checkpoint's v0.1 score is **{THIS_MODEL_BPB} BPB**.
 
-## Usage
+## Loading Example
 
 ```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+repo_id = "{REPO_ID}"
+revision = "v0.1"
 
 tokenizer = AutoTokenizer.from_pretrained(
-    "poietic-pbc/emender-e88-1.27b",
-    revision="v0.1",
+    repo_id,
+    revision=revision,
     token=True,
 )
 model = AutoModelForCausalLM.from_pretrained(
-    "poietic-pbc/emender-e88-1.27b",
-    revision="v0.1",
+    repo_id,
+    revision=revision,
     trust_remote_code=True,
     token=True,
     torch_dtype=torch.bfloat16,
     device_map="auto",
 )
 
-inputs = tokenizer("The key insight of nonlinear recurrence is", return_tensors="pt")
-outputs = model.generate(**inputs, max_new_tokens=100, do_sample=True, temperature=0.8)
-print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+prompt = "\x1eThe theorem states"
+inputs = tokenizer(prompt, return_tensors="pt")
+input_ids = inputs.input_ids.to(next(model.parameters()).device)
+
+with torch.no_grad():
+    # Minimal raw greedy continuation loop. CPU works but is slow.
+    for _ in range(2):
+        logits = model(input_ids=input_ids).logits[:, -1, :]
+        next_id = logits.argmax(dim=-1, keepdim=True)
+        input_ids = torch.cat([input_ids, next_id], dim=-1)
+
+print(tokenizer.decode(input_ids[0], skip_special_tokens=False))
 ```
-
-**CPU inference note:** The PyTorch fallback is correct but slow. Fast inference
-requires a CUDA GPU and the `triton` package. See `requirements.txt` in this
-repository.
-
----
-
-## Training
-
-### Data
-
-<!-- TODO: fill in dataset mix at release time -->
-- **Dataset:** [TO FILL — e.g., The Pile / RedPajama / custom mix]
-- **Tokens trained:** [TO FILL — e.g., ~100B tokens]
-- **Tokenizer:** [TO FILL — byte-level BPE / raw byte / GPT-2 tokenizer; vocab size]
-- **Context length:** 2048 tokens (training); context curriculum may extend to
-  [TO FILL] tokens.
-
-### Compute
-
-<!-- TODO: fill in at release time -->
-- **Hardware:** [TO FILL — e.g., 8× A100 80 GB / H100]
-- **Training duration:** [TO FILL — e.g., ~N GPU-days]
-- **Compute budget:** [TO FILL — FLOPs or GPU-hours]
-- **Precision:** bfloat16 (weights and activations)
-- **Optimizer:** ScheduleFree AdamW
-
-### Training Code
-
-Entry point: `train.py` at the repository root.
-Repository: [https://github.com/ekg/ndm](https://github.com/ekg/ndm)
-Exact commit: [TO FILL — `git rev-parse HEAD` at training time]
-
----
-
-## Evaluation
-
-### Language Modeling
-
-<!-- TODO: fill in at release time from eval logs -->
-| Benchmark | Score | Notes |
-|-----------|-------|-------|
-| Wikitext-103 (bpb or ppl) | [TO FILL] | |
-| The Pile (bits-per-byte) | [TO FILL] | |
-| [other benchmarks] | [TO FILL] | |
-
-### State-Tracking / Expressivity
-
-<!-- TODO: link to expressivity-results doc once available -->
-NDM is evaluated on controlled finite-state and algorithmic tasks including
-S5 permutation composition, a noncommutative state-tracking task. In matched
-8M-parameter experiments, NDM separates from linear-scan baselines. See the
-expressivity results document (link TBD).
-
-### Comparison Baselines
-
-The primary comparison models in the paper are:
-- `FLA-GDN` (strong linear gated delta baseline)
-- `Mamba2` (strong selective state-space baseline)
-- `M2RNN-paper` (published nonlinear matrix-state geometry)
-- `M2RNN-CMA` (M2RNN geometry reshaped into the multi-head regime)
-
-Full evaluation numbers: [TO FILL — link to results doc or paper section].
-
----
 
 ## Intended Use
 
-**Intended use cases:**
-- Research on recurrent language models and nonlinear state updates
-- State-tracking and reasoning benchmarks
-- Baseline for future nonlinear RNN work
+- Research on recurrent language models, nonlinear or linear recurrent state
+  updates, and multi-programmed recurrent training.
+- Reproduction of the Emender paper's v0.1 racer and private-HF smoke results.
+- Raw text continuation experiments under the exact `v0.1` checkpoint revision.
 
-**Not intended for:**
-- Production deployment without further fine-tuning and safety evaluation
-- Instruction-following tasks (this is a base language model; no instruction
-  tuning has been applied)
-- Safety-critical applications
+## Out Of Scope
 
----
+- Instruction following or chat use.
+- Safety-critical, production, medical, legal, financial, or autonomous
+  decision-making use.
+- Claims about safety alignment, helpfulness, refusal behavior, factuality, or
+  long-context quality outside the measured v0.1 setup.
 
-## Limitations
+## Limitations And Risks
 
-- **No instruction tuning.** This is a base language model. It will complete
-  text rather than follow instructions.
-- **CPU inference is slow.** The fast path requires CUDA and the `triton`
-  package. CPU inference uses the PyTorch fallback, which is O(T) sequential
-  and much slower than transformer-style parallelism.
-- **bfloat16 only for fast path.** The fused Triton/CUDA kernel requires
-  bfloat16 input. float32 falls back to the PyTorch reference path.
-- **Training data biases.** The model inherits any biases present in the
-  training corpus. [TO FILL — describe dataset-specific caveats.]
-- **Context length.** Trained at 2048 tokens. Extrapolation to longer contexts
-  is possible (the recurrence is stateful) but was not the primary training
-  objective; quality may degrade.
-- **No RLHF or safety fine-tuning.** The model may produce harmful, biased,
-  or factually incorrect text.
+- Base model only: no instruction tuning, supervised fine-tuning, preference
+  tuning, RLHF, or safety alignment has been applied.
+- Pile-trained raw language models can emit toxic, biased, private,
+  copyrighted, or memorized text from the training distribution.
+- The `\x1e` delimiter is a data/document boundary marker, not an instruction or
+  safety delimiter.
+- CPU inference uses slow recurrent full-context stepping. Fast paths require
+  compatible CUDA dependencies; E88 additionally has a Triton/fused-kernel path.
+- Loading requires Hugging Face custom code with `trust_remote_code=True`;
+  inspect the repository code before executing it in a sensitive environment.
+- These are single-run v0.1 snapshot checkpoints. The release docs record known
+  follow-up work for final public-readiness and broader evaluation.
 
----
+## Provenance And License
 
-## Provenance
-
-NDM was developed in the `ekg/elman` and `ekg/elman-proofs` repositories.
-The clean implementation is at `ekg/ndm`.
-
-- Training history repository: [https://github.com/ekg/elman](https://github.com/ekg/elman)
-  (commit anchor: `6f0724feae9fc82bd235408ac5c3ae61f2b17c79`)
-- Lean formalizations: [https://github.com/ekg/elman-proofs](https://github.com/ekg/elman-proofs)
-  (commit anchor: `5082610c9cdabf0b31e11dd14ee078273d486333`)
-- This checkpoint's `ndm` repo commit: [TO FILL]
-- Training run path in `~/elman/`: [TO FILL — do not publish raw path; record
-  in provenance/checkpoint_anchors.txt instead]
-
----
-
-## License
-
-Apache 2.0 — see [LICENSE](https://github.com/ekg/ndm/blob/main/LICENSE).
-
----
+The clean release repository target is <https://github.com/poietic-pbc/emender>.
+Historical development provenance is retained in the GitHub repository's
+`provenance/` docs. The model card, wrapper code, and release docs are
+Apache-2.0. Check the repository and Hugging Face file list for the exact files
+covered by the release.
 
 ## Citation
 
-<!-- TODO: fill in once paper DOI / arXiv ID is assigned -->
 ```bibtex
-@article{garrison2026ndm,
-  title   = {Nonlinear Delta Memory: Pure Nonlinear Recurrence at Billion-Parameter Scale},
-  author  = {Garrison, Erik},
-  year    = {2026},
-  note    = {Preprint. arXiv:[TO FILL]},
-  url     = {https://github.com/ekg/ndm},
+@misc{garrison2026emender,
+  title  = {Emender: Pure Nonlinear Recurrence at Billion-Parameter Scale},
+  author = {Garrison, Erik},
+  year   = {2026},
+  note   = {v0.1 release candidate},
+  url    = {https://github.com/poietic-pbc/emender},
 }
 ```

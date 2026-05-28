@@ -1,4 +1,4 @@
-# Standalone Usage — ndm
+# Standalone Usage - ndm
 
 ## Install
 
@@ -9,8 +9,8 @@ pip install ndm
 Or from source (development install):
 
 ```bash
-git clone https://github.com/ekg/ndm
-pip install -e ndm/
+git clone https://github.com/poietic-pbc/emender
+pip install -e emender/
 ```
 
 ## Minimal forward-pass example

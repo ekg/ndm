@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal private-HF generation smoke for pinned v0.1 staging revisions.
+"""Minimal private-HF generation smoke for pinned v0.1 revisions.
 
 The script loads exactly one private Hugging Face model revision using the
 runtime HF_TOKEN, runs a tiny greedy generation, and writes compact JSON
@@ -31,17 +31,20 @@ from scripts.smoke_local_checkpoint_generation import install_cpu_fallbacks  # n
 PINNED_MODELS: dict[str, dict[str, Any]] = {
     "e88": {
         "repo_id": "poietic-pbc/emender-e88-1.27b",
-        "revision": "ad4fc69c421a88fc212a4fb89e8415b75eb4441c",
+        "revision": "v0.1",
+        "expected_sha": "a2e56cb82eec5e01ae6eb501569359c5ff64af6b",
         "identity": "Emender/E88",
     },
     "gdn": {
         "repo_id": "poietic-pbc/gdn-1.27b",
-        "revision": "95ef019198b9e125928a8cf2349895bc31a4906b",
+        "revision": "v0.1",
+        "expected_sha": "556df7f00969c6a8dbeb381e3c8b51cf0c0385f9",
         "identity": "GDN",
     },
     "m2rnn": {
         "repo_id": "poietic-pbc/m2rnn-cma-1.27b",
-        "revision": "af3cf2db65dfd14b64a5c030c99156828fdfb958",
+        "revision": "v0.1",
+        "expected_sha": "8181b77803e130ffd78e37c33aa4d58c27e719c2",
         "identity": "M2RNN-CMA",
     },
 }
@@ -102,8 +105,11 @@ def main() -> int:
     refs = api.list_repo_refs(spec["repo_id"], repo_type="model", token=token)
     if getattr(info, "private", None) is not True:
         raise SystemExit(f"{spec['repo_id']} readback private={getattr(info, 'private', None)}")
-    if getattr(info, "sha", None) != spec["revision"]:
-        raise SystemExit(f"{spec['repo_id']} resolved sha {getattr(info, 'sha', None)} != pinned revision")
+    if getattr(info, "sha", None) != spec["expected_sha"]:
+        raise SystemExit(
+            f"{spec['repo_id']} revision {spec['revision']} resolved sha "
+            f"{getattr(info, 'sha', None)} != expected {spec['expected_sha']}"
+        )
 
     torch_dtype = parse_dtype(args.cpu_dtype if device.type == "cpu" else args.cuda_dtype)
     cfg = AutoConfig.from_pretrained(
@@ -167,6 +173,7 @@ def main() -> int:
         "repo_id": spec["repo_id"],
         "expected_identity": spec["identity"],
         "revision": spec["revision"],
+        "expected_sha": spec["expected_sha"],
         "resolved_sha": getattr(info, "sha", None),
         "private": getattr(info, "private", None),
         "branches": [branch.name for branch in refs.branches],

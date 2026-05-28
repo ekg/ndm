@@ -8,11 +8,24 @@ private-HF CPU and CUDA smoke task passed. No repository visibility was changed.
 No explicit public-release approval was present in the task context, so the
 repositories remain private.
 
+2026-05-28 update: `release-v01-model-card-docs-polish` recreated the private
+`v0.1` tags at README-only docs-polish descendants. The central current-release
+hub is `docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md`; the exact current SHAs are:
+
+| Model identity | Repo | Current `v0.1` SHA | Previous smoke-tested artifact SHA |
+| --- | --- | --- | --- |
+| Emender/E88 | `poietic-pbc/emender-e88-1.27b` | `a2e56cb82eec5e01ae6eb501569359c5ff64af6b` | `ad4fc69c421a88fc212a4fb89e8415b75eb4441c` |
+| GDN | `poietic-pbc/gdn-1.27b` | `556df7f00969c6a8dbeb381e3c8b51cf0c0385f9` | `95ef019198b9e125928a8cf2349895bc31a4906b` |
+| M2RNN-CMA | `poietic-pbc/m2rnn-cma-1.27b` | `8181b77803e130ffd78e37c33aa4d58c27e719c2` | `af3cf2db65dfd14b64a5c030c99156828fdfb958` |
+
+The downstream final Docker smoke must validate the current `v0.1` SHAs before
+any public visibility change.
+
 No token values, checkpoints, safetensors files, Hugging Face caches, Docker
 layers, generated PDFs, or other large generated artifacts were copied into the
 repository, staged, or committed.
 
-## Tagged Revisions
+## Original Tagged Revisions
 
 The tags were created at the exact revisions validated by
 `release-v01-docker-private-hf-smoke`.
@@ -63,9 +76,9 @@ No visibility-changing command or API was run. In particular,
 
 ## Paper And Release Links
 
-`paper/main.typ` already pointed the E88 release target at
-`https://huggingface.co/poietic-pbc/emender-e88-1.27b/tree/v0.1`, so no paper
-source text changed in this task and no refreshed PDF upload was required.
+`paper/main.typ` now points to the central release hub, all three HF
+`v0.1` targets, and the paper PDF target:
+`https://github.com/poietic-pbc/emender/releases/download/v0.1/Garrison_2026_Emender.pdf`.
 
 Release documentation and the model-card template were updated so active HF
 examples use the `poietic-pbc` namespace and `revision="v0.1"` instead of the

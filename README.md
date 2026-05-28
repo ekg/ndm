@@ -1,4 +1,4 @@
-# Nonlinear Delta Memory
+# Emender / Nonlinear Delta Memory
 
 **Nonlinear Delta Memory** (NDM) is a pure recurrent language-model family based
 on many small nonlinear matrix memories. It is designed to test a simple
@@ -15,9 +15,27 @@ model contains hundreds of heads per layer and many layers per network. The
 training workload is therefore a large collection of small recurrent programs,
 parallelized across batch elements, heads, and state tiles.
 
-The current optimized implementation is called **E88/NDM** in the codebase. It
-uses a fused Triton kernel for the recurrent state update and has been used in
-1.27B-parameter language-model training runs.
+The current optimized implementation is called **Emender/E88** in the public
+release and **E88/NDM** in parts of the codebase. It uses a fused Triton kernel
+for the recurrent state update and has been used in 1.27B-parameter
+language-model training runs.
+
+## v0.1 Release
+
+The v0.1 public-release hub is
+[`docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md`](docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md).
+It links the paper, GitHub repository, exact Hugging Face revisions, Docker
+smoke instructions, and public-release checklist.
+
+- GitHub release target: <https://github.com/poietic-pbc/emender>
+- Paper PDF target: <https://github.com/poietic-pbc/emender/releases/download/v0.1/Garrison_2026_Emender.pdf>
+- Paper source: <https://github.com/poietic-pbc/emender/blob/main/paper/main.typ>
+- Emender/E88 model: <https://huggingface.co/poietic-pbc/emender-e88-1.27b>
+- GDN model: <https://huggingface.co/poietic-pbc/gdn-1.27b>
+- M2RNN-CMA model: <https://huggingface.co/poietic-pbc/m2rnn-cma-1.27b>
+
+The HF models are raw/base recurrent language models for research and paper
+reproduction. They are not instruction-tuned or safety-tuned.
 
 ## The Memory Update
 

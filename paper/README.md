@@ -12,7 +12,7 @@ The source is `paper/main.typ`. Do not create `.tex` files.
 bash paper/build.sh
 ```
 
-This produces `paper/Garrison_2026_NDM-<commit8>.pdf` (or `...-dirty.pdf` if the
+This produces `paper/Garrison_2026_Emender-<commit8>.pdf` (or `...-dirty.pdf` if the
 working tree has uncommitted changes). The script can be run from the repo root
 or from inside `paper/` — both work. The PDF is gitignored (it is a build
 artifact; do not commit it).
@@ -33,7 +33,7 @@ typst --version
 paper/
   main.typ          # Master source (all sections)
   refs.bib          # BibTeX bibliography (Typst reads BibTeX natively)
-  build.sh          # Build script: typst compile → Garrison_2026_NDM-<commit>.pdf
+  build.sh          # Build script: typst compile -> Garrison_2026_Emender-<commit>.pdf
   figures/          # Figure files (SVG, PNG, PDF); placeholder SVGs now
   results/          # Numerical results staged for figures (created per-figure)
   OUTLINE.md        # Section-by-section paper outline (reference, not the draft)

@@ -173,6 +173,7 @@ for path in sorted(output_dir.glob("*.json")):
         "model": data.get("model"),
         "repo_id": data.get("repo_id"),
         "revision": data.get("revision"),
+        "expected_sha": data.get("expected_sha"),
         "resolved_sha": data.get("resolved_sha"),
         "private": data.get("private"),
         "device": data.get("device"),
@@ -189,7 +190,7 @@ for path in sorted(output_dir.glob("*.json")):
         "cpu_fallbacks": data.get("cpu_fallbacks"),
     }
     rows.append(row)
-    ok = ok and bool(row["ok"]) and bool(row["private"]) and row["revision"] == row["resolved_sha"]
+    ok = ok and bool(row["ok"]) and bool(row["private"]) and row["expected_sha"] == row["resolved_sha"]
 
 expected = {
     ("e88", "cpu"),
@@ -225,6 +226,7 @@ with summary_txt.open("w") as fh:
             row["model"],
             row["device"],
             row["revision"],
+            row["resolved_sha"],
             row["model_class"],
             row["core_model_class"],
             row["generated_new_token_ids"],

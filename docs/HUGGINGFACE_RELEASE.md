@@ -1,5 +1,9 @@
 # HuggingFace Release Checklist
 
+Central v0.1 release hub:
+[`docs/RELEASE_V01_PUBLIC_RELEASE_HUB.md`](RELEASE_V01_PUBLIC_RELEASE_HUB.md).
+The public GitHub target is <https://github.com/poietic-pbc/emender>.
+
 ## Loading-Path Decision
 
 **Chosen path: custom-code `AutoModelForCausalLM` with `trust_remote_code=True`.**
@@ -47,8 +51,8 @@ release.
 | `modeling_ndm.py` | `NdmForCausalLM(PreTrainedModel)` wrapper that instantiates `E88FusedLM` |
 | `configuration_ndm.py` | `NdmConfig(PretrainedConfig)` dataclass |
 | `model.safetensors` (or shards) | Weights converted via `safetensors.torch.save_file` |
-| `tokenizer_config.json` | Tokenizer metadata (byte-level BPE or GPT-2 tokenizer) |
-| `vocab.json` + `merges.txt` | Tokenizer vocabulary (if BPE; omit if using raw byte tokenizer) |
+| `tokenizer_config.json` | Tokenizer metadata for `p50k_base` exported as `PreTrainedTokenizerFast` |
+| `tokenizer.json` + `tiktoken/tokenizer.model` | Exported `p50k_base` tokenizer files |
 | `special_tokens_map.json` | EOS/BOS/PAD token mapping |
 | `README.md` | The filled model card (see `MODEL_CARD_TEMPLATE.md`) |
 | `requirements.txt` | `torch>=2.0`, `triton` (optional fast path), `einops` |
@@ -109,9 +113,11 @@ release.
 
 ### Phase 5 — Model Card
 
-- [ ] **5.1** Fill in `docs/MODEL_CARD_TEMPLATE.md` with the actual values:
-      token count, dataset mix, compute hours, hardware spec, eval numbers.
-- [ ] **5.2** Copy the completed card to `README.md` in the HF repo directory.
+- [x] **5.1** Fill in model cards with raw/base identity, architecture,
+      training data, tokenizer/context, verified delimiter behavior, v0.1 BPB
+      metrics, intended use, limitations, load examples, and provenance links.
+- [x] **5.2** Update `README.md` on all three private HF repos on `main` and
+      `staging`; recreate private `v0.1` tags at the docs-polish staging commits.
 
 ### Phase 6 — HuggingFace Upload And Private Tag
 
@@ -123,7 +129,8 @@ release.
       ```
 - [x] **6.3** Run private-HF CPU and CUDA clean-container smokes at the exact
       uploaded staging commits.
-- [x] **6.4** Create immutable `v0.1` tags at the smoke-tested commits.
+- [x] **6.4** Create `v0.1` tags at the smoke-tested commits; docs-polish later
+      recreated those private tags at README-only descendants listed below.
 - [ ] **6.5** Set repository visibility to public only after explicit user
       approval is present and logged.
 - [ ] **6.6** Add topics: `rnn`, `language-model`, `nonlinear-rnn`, `triton`,
@@ -173,6 +180,23 @@ Chosen v0.1 HF model repositories:
 The `poietic-pbc` namespace is the release namespace for v0.1. The Python
 package and import path remain `ndm` for this release unless a separate package
 rename task approves and performs a broader migration.
+
+---
+
+## Current v0.1 Private HF Tags
+
+As of the 2026-05-28 model-card polish, `v0.1` resolves to docs-only commits
+that descend from the previously smoke-tested artifact commits. Downstream final
+smoke must validate these current SHAs before public visibility changes.
+
+| Model identity | Repository | Previous artifact SHA | Current `v0.1` SHA | Main-card SHA |
+| --- | --- | --- | --- | --- |
+| Emender/E88 | `poietic-pbc/emender-e88-1.27b` | `ad4fc69c421a88fc212a4fb89e8415b75eb4441c` | `a2e56cb82eec5e01ae6eb501569359c5ff64af6b` | `718b3e15bb8ed7f065c5aa65a569e62af7a12a02` |
+| GDN baseline | `poietic-pbc/gdn-1.27b` | `95ef019198b9e125928a8cf2349895bc31a4906b` | `556df7f00969c6a8dbeb381e3c8b51cf0c0385f9` | `7b267ad249cf57594feaa38ef6b3aebd108722c4` |
+| M2RNN-CMA baseline | `poietic-pbc/m2rnn-cma-1.27b` | `af3cf2db65dfd14b64a5c030c99156828fdfb958` | `8181b77803e130ffd78e37c33aa4d58c27e719c2` | `74091c1457d0e6a46872d72d38d12f6a10170d29` |
+
+The model cards and hub point to the paper PDF target:
+<https://github.com/poietic-pbc/emender/releases/download/v0.1/Garrison_2026_Emender.pdf>.
 
 ---
 
