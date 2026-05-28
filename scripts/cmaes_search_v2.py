@@ -749,7 +749,7 @@ def build_train_command(params, model_type, train_minutes, output_dir):
             cmd.extend(['--e88_raw_write', '1'])
         elif model_type == 'e97-linear':
             cmd.extend(['--linear_state', '1'])
-        if USE_TRITON_E88 and model_type != 'e97-linear':
+        if USE_TRITON_E88:
             cmd.extend(['--use_triton', '1'])
 
     elif model_type == 'e91':

@@ -124,6 +124,7 @@ def _e88_backward_kernel(
     NORMALIZE_KQ: tl.constexpr,
     APPLY_SILU_QKV: tl.constexpr,
     RAW_WRITE: tl.constexpr,
+    LINEAR_STATE: tl.constexpr,
     SPLIT_EDIT: tl.constexpr,
 ):
     """One program per (batch, head_block). Reverse-segment loop."""
@@ -249,9 +250,12 @@ def _e88_backward_kernel(
                 delta = write_value - retrieved
             outer = k_vec[:, :, None] * delta[:, None, :]
             pre = decay_val[:, None, None] * S + outer
-            # Match forward's stable tanh path. The raw exp formula can
-            # overflow and turn saturation into inf/inf = NaN.
-            S = 2.0 * tl.sigmoid(2.0 * pre) - 1.0
+            if LINEAR_STATE:
+                S = pre
+            else:
+                # Match forward's stable tanh path. The raw exp formula can
+                # overflow and turn saturation into inf/inf = NaN.
+                S = 2.0 * tl.sigmoid(2.0 * pre) - 1.0
 
             # Save S after step t into scratch slot j+1 (bf16-cast).
             slot_off = prog_scratch_base + (j + 1) * tile_size + scratch_inner
@@ -372,8 +376,11 @@ def _e88_backward_kernel(
             # d_q_t = sum_v S_t * d_out
             d_q = tl.sum(S_t * d_out[:, None, :], axis=2)
 
-            # d_pre = dS_t * (1 - S_t^2)
-            d_pre = dS_t * (1.0 - S_t * S_t)
+            # d_pre = dS_t for linear-state ablation, otherwise tanh chain rule.
+            if LINEAR_STATE:
+                d_pre = dS_t
+            else:
+                d_pre = dS_t * (1.0 - S_t * S_t)
 
             # d_decay_t = sum_{n,v} d_pre * S_{t-1}
             d_decay = tl.sum(tl.sum(d_pre * S_tm1, axis=2), axis=1)
@@ -517,6 +524,7 @@ def e88_triton_backward(
     normalize_kq: bool = False,
     apply_silu_qkv: bool = False,
     raw_write: bool = False,
+    linear_state: bool = False,
     erase_gate: torch.Tensor = None,
     value_write_gate: torch.Tensor = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -715,6 +723,7 @@ def e88_triton_backward(
         NORMALIZE_KQ=bool(normalize_kq),
         APPLY_SILU_QKV=bool(apply_silu_qkv),
         RAW_WRITE=bool(raw_write),
+        LINEAR_STATE=bool(linear_state),
         SPLIT_EDIT=bool(split_edit),
         num_warps=num_warps,
     )
@@ -741,8 +750,8 @@ class E88TritonFunction(torch.autograd.Function):
     launches per layer call (silu, multiply) and matches CUDA's
     register-owned forward.
 
-    Ignores ``linear_state=True`` (not currently supported by the Triton
-    path — the forward kernel always applies tanh).
+    Supports the ``linear_state=True`` ablation by dropping tanh in both the
+    forward replay and backward chain rule.
     """
 
     @staticmethod
@@ -759,16 +768,19 @@ class E88TritonFunction(torch.autograd.Function):
         raw_write=False,
         erase_gate=None,
         value_write_gate=None,
+        linear_state=False,
     ):
         from ndm.triton.e88_triton_forward import e88_triton_forward
         out, S_final, S_ckpt = e88_triton_forward(
             S0, k, v, q, decay, g=g, normalize_kq=normalize_kq,
             apply_silu_qkv=apply_silu_qkv, raw_write=raw_write,
+            linear_state=linear_state,
             erase_gate=erase_gate, value_write_gate=value_write_gate,
         )
         ctx.normalize_kq = bool(normalize_kq)
         ctx.apply_silu_qkv = bool(apply_silu_qkv)
         ctx.raw_write = bool(raw_write)
+        ctx.linear_state = bool(linear_state)
         ctx.has_split_edit = erase_gate is not None or value_write_gate is not None
         # Save for backward. Note: S0 isn't strictly required (it equals
         # S_ckpt[0]), but saving it is cheap and explicit. We must save
@@ -792,6 +804,7 @@ class E88TritonFunction(torch.autograd.Function):
         nkq = ctx.normalize_kq
         silu_qkv = ctx.apply_silu_qkv
         raw_write = ctx.raw_write
+        linear_state = ctx.linear_state
         if ctx.has_gate and ctx.has_split_edit:
             k, v, q, decay, S_ckpt, g, erase_gate, value_write_gate = ctx.saved_tensors
             d_k, d_v, d_q, d_decay, d_g, d_erase, d_value_write, d_S0 = e88_triton_backward(
@@ -802,12 +815,13 @@ class E88TritonFunction(torch.autograd.Function):
                 normalize_kq=nkq,
                 apply_silu_qkv=silu_qkv,
                 raw_write=raw_write,
+                linear_state=linear_state,
                 erase_gate=erase_gate,
                 value_write_gate=value_write_gate,
             )
             return (
                 d_S0, d_k, d_v, d_q, d_decay, d_g,
-                None, None, None, d_erase, d_value_write,
+                None, None, None, d_erase, d_value_write, None,
             )
         elif ctx.has_gate:
             k, v, q, decay, S_ckpt, g = ctx.saved_tensors
@@ -819,9 +833,10 @@ class E88TritonFunction(torch.autograd.Function):
                 normalize_kq=nkq,
                 apply_silu_qkv=silu_qkv,
                 raw_write=raw_write,
+                linear_state=linear_state,
             )
             # Match forward signature order (S0, k, v, q, decay, g, normalize_kq).
-            return d_S0, d_k, d_v, d_q, d_decay, d_g, None, None, None, None, None
+            return d_S0, d_k, d_v, d_q, d_decay, d_g, None, None, None, None, None, None
         elif ctx.has_split_edit:
             k, v, q, decay, S_ckpt, erase_gate, value_write_gate = ctx.saved_tensors
             d_k, d_v, d_q, d_decay, d_erase, d_value_write, d_S0 = e88_triton_backward(
@@ -831,12 +846,13 @@ class E88TritonFunction(torch.autograd.Function):
                 normalize_kq=nkq,
                 apply_silu_qkv=silu_qkv,
                 raw_write=raw_write,
+                linear_state=linear_state,
                 erase_gate=erase_gate,
                 value_write_gate=value_write_gate,
             )
             return (
                 d_S0, d_k, d_v, d_q, d_decay, None,
-                None, None, None, d_erase, d_value_write,
+                None, None, None, d_erase, d_value_write, None,
             )
         else:
             k, v, q, decay, S_ckpt = ctx.saved_tensors
@@ -847,9 +863,10 @@ class E88TritonFunction(torch.autograd.Function):
                 normalize_kq=nkq,
                 apply_silu_qkv=silu_qkv,
                 raw_write=raw_write,
+                linear_state=linear_state,
             )
             # Match forward signature order (S0, k, v, q, decay, g, normalize_kq).
-            return d_S0, d_k, d_v, d_q, d_decay, None, None, None, None, None, None
+            return d_S0, d_k, d_v, d_q, d_decay, None, None, None, None, None, None, None
 
 
 def e88_triton(
@@ -864,6 +881,7 @@ def e88_triton(
     raw_write=False,
     erase_gate=None,
     value_write_gate=None,
+    linear_state=False,
 ):
     """Differentiable Triton E88 — returns (out, S_final).
 
@@ -878,5 +896,5 @@ def e88_triton(
     """
     return E88TritonFunction.apply(
         S0, k, v, q, decay, g, normalize_kq, apply_silu_qkv, raw_write,
-        erase_gate, value_write_gate,
+        erase_gate, value_write_gate, linear_state,
     )

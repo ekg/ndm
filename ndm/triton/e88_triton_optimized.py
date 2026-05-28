@@ -36,6 +36,7 @@ def e88_triton_optimized_apply(
     checkpoint_interval: int = 16,  # ignored — Triton stores all checkpoints
     apply_silu_qkv: bool = False,
     raw_write: bool = False,
+    linear_state: bool = False,
     erase_gate: torch.Tensor = None,
     value_write_gate: torch.Tensor = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -89,6 +90,7 @@ def e88_triton_optimized_apply(
             S0, k_t, v_t, q_t, decay_t, g_t, normalize_kq=normalize_kq,
             apply_silu_qkv=apply_silu_qkv,
             raw_write=raw_write,
+            linear_state=linear_state,
             erase_gate=erase_t,
             value_write_gate=value_write_t,
         )
@@ -98,6 +100,7 @@ def e88_triton_optimized_apply(
             S0, k_t, v_t, q_t, decay_t, None, normalize_kq=normalize_kq,
             apply_silu_qkv=apply_silu_qkv,
             raw_write=raw_write,
+            linear_state=linear_state,
             erase_gate=erase_t,
             value_write_gate=value_write_t,
         )

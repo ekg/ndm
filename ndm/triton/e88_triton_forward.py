@@ -112,6 +112,7 @@ def _e88_forward_kernel(
     NORMALIZE_KQ: tl.constexpr,  # if True, L2-normalize k and q on load (per head, last dim)
     APPLY_SILU_QKV: tl.constexpr,  # if True, apply silu to raw q/k/v projection loads
     RAW_WRITE: tl.constexpr,  # if True, ablate delta correction: delta = v
+    LINEAR_STATE: tl.constexpr,  # if True, ablate tanh: S = pre
     SPLIT_EDIT: tl.constexpr,  # if True, use E97 b/w edit gates
 ):
     """One program per (batch, head_block). Sequential time loop."""
@@ -230,12 +231,15 @@ def _e88_forward_kernel(
             retrieved = tl.sum(S * read_key[:, :, None], axis=1)   # [BH, BV]
             delta = write_value - retrieved                        # [BH, BV]
 
-        # Update: S = tanh(decay * S + outer(k, delta))
+        # Update: standard E88 uses tanh; linear-state ablation keeps pre.
         outer = k_vec[:, :, None] * delta[:, None, :]       # [BH, BN, BV]
         pre = d_val[:, None, None] * S + outer
-        # Stable tanh. The raw exp formula overflows for pre > ~44 in fp32,
-        # yielding inf/inf = NaN. sigmoid saturates without forming inf/inf.
-        S = 2.0 * tl.sigmoid(2.0 * pre) - 1.0
+        if LINEAR_STATE:
+            S = pre
+        else:
+            # Stable tanh. The raw exp formula overflows for pre > ~44 in fp32,
+            # yielding inf/inf = NaN. sigmoid saturates without forming inf/inf.
+            S = 2.0 * tl.sigmoid(2.0 * pre) - 1.0
 
         # Output: out[h, v] = sum_n S[h, n, v] * q[h, n]   (reduce over N axis=1)
         out_vec = tl.sum(S * q_vec[:, :, None], axis=1)     # [BH, BV]
@@ -331,6 +335,7 @@ def _autotune_kernel(
     normalize_kq,
     apply_silu_qkv,
     raw_write,
+    linear_state,
     split_edit,
 ):
     """Tiny in-process autotune. Tries (BLOCK_H, num_warps) and caches winner.
@@ -344,7 +349,8 @@ def _autotune_kernel(
     """
     cache_key = (
         B, T, H, N, Vsz, str(dtype), ckpt_interval, bool(normalize_kq),
-        bool(apply_silu_qkv), bool(raw_write), bool(split_edit),
+        bool(apply_silu_qkv), bool(raw_write), bool(linear_state),
+        bool(split_edit),
     )
     if cache_key in _AUTOTUNE_CACHE:
         return _AUTOTUNE_CACHE[cache_key]
@@ -396,6 +402,7 @@ def _autotune_kernel(
                         NORMALIZE_KQ=bool(normalize_kq),
                         APPLY_SILU_QKV=bool(apply_silu_qkv),
                         RAW_WRITE=bool(raw_write),
+                        LINEAR_STATE=bool(linear_state),
                         SPLIT_EDIT=bool(split_edit),
                         num_warps=nw,
                     )
@@ -415,6 +422,7 @@ def _autotune_kernel(
                         NORMALIZE_KQ=bool(normalize_kq),
                         APPLY_SILU_QKV=bool(apply_silu_qkv),
                         RAW_WRITE=bool(raw_write),
+                        LINEAR_STATE=bool(linear_state),
                         SPLIT_EDIT=bool(split_edit),
                         num_warps=nw,
                     )
@@ -447,6 +455,7 @@ def e88_triton_forward(
     normalize_kq: bool = False,  # if True, kernel L2-normalizes k and q on load
     apply_silu_qkv: bool = False,  # if True, kernel applies silu to raw q/k/v loads
     raw_write: bool = False,  # if True, use raw v write instead of delta correction
+    linear_state: bool = False,  # if True, drop tanh and use the raw preactivation state
     erase_gate: torch.Tensor = None,  # [T, B, H, N] E97 read/erase gate
     value_write_gate: torch.Tensor = None,  # [T, B, H, V] E97 value write gate
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -604,7 +613,8 @@ def e88_triton_forward(
             )
             block_h_chosen, nw = _autotune_kernel(
                 launch_args, B, T, H, N, Vsz, out_dtype, ckpt_interval,
-                normalize_kq, apply_silu_qkv, raw_write, split_edit,
+                normalize_kq, apply_silu_qkv, raw_write, linear_state,
+                split_edit,
             )
     else:
         block_h_chosen = int(block_h)
@@ -624,6 +634,7 @@ def e88_triton_forward(
         NORMALIZE_KQ=bool(normalize_kq),
         APPLY_SILU_QKV=bool(apply_silu_qkv),
         RAW_WRITE=bool(raw_write),
+        LINEAR_STATE=bool(linear_state),
         SPLIT_EDIT=bool(split_edit),
         num_warps=nw,
     )

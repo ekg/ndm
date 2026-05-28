@@ -1235,6 +1235,7 @@ class E88FLAHybrid(nn.Module):
                 self.n_heads, True, use_fused_l2, self.checkpoint_interval,
                 apply_silu_qkv=qkv_silu_in_kernel,
                 raw_write=self.raw_write,
+                linear_state=self.linear_state,
             )
         else:
             S_new, output = E88OptimizedCUDAFunction.apply(
@@ -1578,6 +1579,7 @@ class E88FLAHybrid(nn.Module):
                         self.checkpoint_interval,
                         apply_silu_qkv=qkv_silu_in_kernel,
                         raw_write=self.raw_write,
+                        linear_state=self.linear_state,
                         erase_gate=erase_for_kernel,
                         value_write_gate=value_write_for_kernel,
                     )
