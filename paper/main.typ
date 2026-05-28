@@ -928,7 +928,10 @@ and update rule.
     `scripts/estimate_tokenizer_bytes_per_token.json`, methodology
     sentence in this section). E88 is at
     1.273 B parameters; M²RNN-CMA at 1.307 B; GDN at 1.352 B; each
-    model has trained 18-20 GPU-days at this recording; the
+    model has trained 18-20 GPU-days at this recording. The plotted
+    trajectory is one realization per architecture; the within-class
+    ordering it illustrates is replicated across four CMA-ES sweeps
+    (250+ configs/architecture) and the delta-off ablation (§9). The
     multi-week per-architecture training extent is the standard unit
     at this scale class. *Panel A:* full curve on log-wallclock
     from h = 1. *Panel B:* tail (h ≥ 40) on linear wallclock.
