@@ -52,8 +52,10 @@ from calc_dim import (
     calc_transformer_params, calc_gru_params, calc_lstm_params,
     calc_mingru_params, calc_minlstm_params, calc_mom_e88_params, calc_e90_params,
     calc_e1_params, calc_e1h_params, calc_e23_params, calc_e42_params, calc_e75_params,
-    calc_m2rnn_params
+    calc_m2rnn_params, calc_gdn2_params, calc_mamba3_params,
 )
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Supported n_state values for E88
 E88_SUPPORTED_N_STATE = [16, 32]
@@ -200,12 +202,28 @@ SEARCH_SPACES = {
         'lr': (1e-4, 3e-3, 'log', 'Learning rate'),
         'batch_size': (1, 128, 'int_log', 'Batch size (log-scale, clamped to max feasible)'),
         },
+    'gdn2': {
+        'dim': (1024, 4096, 'int_mult128', 'Model dimension'),
+        'expansion': (1, 3, 'int', 'Value expansion factor'),
+        'depth': (10, 50, 'int', 'Number of layers'),
+        'n_heads': (8, 64, 'int', 'Number of heads'),
+        'lr': (1e-4, 3e-3, 'log', 'Learning rate'),
+        'batch_size': (1, 128, 'int_log', 'Batch size (log-scale, clamped to max feasible)'),
+        },
     'mamba2': {
         'dim': (1024, 3072, 'int_mult128', 'Model dimension'),
         'd_state': (64, 256, 'int_mult16', 'SSM state dimension'),
         # expand upper bound widened from 3 to 4 (2026-05-25): audit flagged
         # expand=3 as a weak boundary signal at 1.27B; give CMA-ES room.
         'expand': (1, 4, 'int', 'Expansion factor'),
+        'depth': (10, 40, 'int', 'Number of layers'),
+        'lr': (1e-4, 3e-3, 'log', 'Learning rate'),
+        'batch_size': (1, 128, 'int_log', 'Batch size (log-scale, clamped to max feasible)'),
+        },
+    'mamba3': {
+        'dim': (1024, 3072, 'int_mult128', 'Model dimension'),
+        'd_state': (64, 256, 'int_mult16', 'SSM state dimension'),
+        'expand': (1, 3, 'int', 'Expansion factor'),
         'depth': (10, 40, 'int', 'Number of layers'),
         'lr': (1e-4, 3e-3, 'log', 'Learning rate'),
         'batch_size': (1, 128, 'int_log', 'Batch size (log-scale, clamped to max feasible)'),
@@ -546,9 +564,19 @@ def estimate_params_for_config(params, model_type):
         return embed + w_h_time + w_h_layer + head
     elif model_type == 'fla-gdn':
         return calc_fla_gdn_params(dim, depth=depth, expansion=params.get('expansion', 2))
+    elif model_type == 'gdn2':
+        return calc_gdn2_params(
+            dim, depth=depth, expansion=params.get('expansion', 2),
+            n_heads=params.get('n_heads', None),
+        )
     elif model_type == 'mamba2':
         return calc_mamba2_params(dim, depth=depth, expand=params.get('expand', 2),
                                     d_state=params.get('d_state', 64))
+    elif model_type == 'mamba3':
+        return calc_mamba3_params(
+            dim, depth=depth, expand=params.get('expand', 2),
+            d_state=params.get('d_state', 128),
+        )
     elif model_type == 'transformer':
         return calc_transformer_params(dim, depth=depth, n_heads=params.get('n_heads', 16),
                                        expansion=params.get('expansion', 4))
@@ -656,7 +684,7 @@ def build_train_command(params, model_type, train_minutes, output_dir):
     lr = params.get('lr', 3e-4)
 
     cmd = [
-        sys.executable, 'train.py',
+        sys.executable, str(REPO_ROOT / 'train.py'),
         '--data', DATA_PATH,
         '--dim', str(dim),
         '--depth', str(params['depth']),
@@ -877,11 +905,30 @@ def build_train_command(params, model_type, train_minutes, output_dir):
             '--n_heads', str(params.get('n_heads', 16)),
         ])
 
+    elif model_type == 'gdn2':
+        cmd.extend([
+            '--level', 'gdn2',
+            '--expansion', str(params['expansion']),
+            '--n_heads', str(params.get('n_heads', 16)),
+            '--use_conv', '1',
+            '--d_conv', '4',
+        ])
+
     elif model_type == 'mamba2':
         cmd.extend([
             '--level', 'mamba2',
             '--mamba_d_state', str(params.get('d_state', 64)),
             '--mamba_expand', str(params.get('expand', 2)),
+        ])
+
+    elif model_type == 'mamba3':
+        cmd.extend([
+            '--level', 'mamba3',
+            '--mamba_d_state', str(params.get('d_state', 128)),
+            '--mamba_expand', str(params.get('expand', 2)),
+            '--mamba3_headdim', '64',
+            '--mamba3_mimo', '0',
+            '--mamba3_mimo_rank', '4',
         ])
 
     elif model_type == 'transformer':
@@ -1051,6 +1098,14 @@ def prepare_worker_env(model_type, gpu_id):
     """Build subprocess environment for one training worker."""
     env = os.environ.copy()
     env['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
+    cuda_home = "/usr/local/cuda-12.8"
+    if os.path.isdir(cuda_home):
+        env.setdefault("CUDA_HOME", cuda_home)
+        env["PATH"] = f"{cuda_home}/bin:{env.get('PATH', '')}"
+    if model_type == 'gdn2' and os.path.isdir('/home/erikg/GatedDeltaNet-2'):
+        env.setdefault('GDN2_PATH', '/home/erikg/GatedDeltaNet-2')
+    if model_type == 'mamba3' and os.path.isdir('/home/erikg/mamba3'):
+        env.setdefault('MAMBA3_PATH', '/home/erikg/mamba3')
 
     if model_type in ('m2rnn', 'm2rnn-paper'):
         # The released M2RNN path is only practical through XMA at this scale.
@@ -1201,7 +1256,7 @@ def run_training_progressive(gpu_id, params, model_type, train_minutes, output_d
         json.dump({'params': params, 'model_type': model_type, 'eval_id': eval_id}, f, default=str)
 
     env = prepare_worker_env(model_type, gpu_id)
-    cwd = os.path.dirname(os.path.abspath(__file__))
+    cwd = str(REPO_ROOT)
 
     actual_params = estimate_params_for_config(params, model_type)
 
@@ -1357,7 +1412,7 @@ def run_training(gpu_id, params, model_type, train_minutes, output_dir, eval_id)
     cmd_base, actual_params = build_train_command(params, model_type, train_minutes, eval_dir)
 
     env = prepare_worker_env(model_type, gpu_id)
-    cwd = os.path.dirname(os.path.abspath(__file__))
+    cwd = str(REPO_ROOT)
 
     cmd_no_bs = strip_cmd_arg(cmd_base, '--batch_size')
 

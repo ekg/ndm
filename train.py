@@ -168,9 +168,15 @@ def parse_args():
 
     # Mamba2-specific
     parser.add_argument('--mamba_expand', type=int, default=2,
-                        help='Mamba2 expansion factor (expand)')
+                        help='Mamba2/Mamba3 expansion factor (expand)')
     parser.add_argument('--mamba_d_state', type=int, default=64,
-                        help='Mamba2 state dimension (d_state)')
+                        help='Mamba2/Mamba3 state dimension (d_state)')
+    parser.add_argument('--mamba3_headdim', type=int, default=64,
+                        help='Mamba3 head dimension')
+    parser.add_argument('--mamba3_mimo', type=int, default=0,
+                        help='Mamba3: use MIMO kernels (1=yes, 0=SISO)')
+    parser.add_argument('--mamba3_mimo_rank', type=int, default=4,
+                        help='Mamba3 MIMO rank')
 
     # Training
     parser.add_argument('--batch_size', type=int, default=16,
@@ -393,6 +399,25 @@ def train(args):
         else:
             from ndm.models.mamba2_baseline import create_mamba2_model
             model = create_mamba2_model(target_params=args.params, vocab_size=vocab_size, expand=args.mamba_expand)
+    elif args.level == 'mamba3':
+        from ndm.models.mamba3_baseline import Mamba3LM
+        if args.dim is None or args.depth is None:
+            raise ValueError("--level mamba3 requires explicit --dim and --depth")
+        mamba3_chunk_size = min(args.chunk_size, 64)
+        if args.mamba3_mimo:
+            mamba3_chunk_size = min(mamba3_chunk_size, max(16, 64 // max(1, args.mamba3_mimo_rank)))
+        model = Mamba3LM(
+            vocab_size=vocab_size,
+            dim=args.dim,
+            depth=args.depth,
+            d_state=args.mamba_d_state,
+            expand=args.mamba_expand,
+            headdim=args.mamba3_headdim,
+            is_mimo=bool(args.mamba3_mimo),
+            mimo_rank=args.mamba3_mimo_rank,
+            mamba_chunk_size=mamba3_chunk_size,
+            loss_chunk_size=args.loss_chunk_size,
+        )
     elif args.level == 'hybrid':
         if args.dim is None or args.depth is None:
             raise ValueError("--level hybrid requires explicit --dim and --depth")

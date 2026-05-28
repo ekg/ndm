@@ -12,6 +12,7 @@ build/
 dist/
 output/
 benchmark_results/
+experiments/local/
 checkpoints/
 *.pt
 *.pth

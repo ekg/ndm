@@ -91,6 +91,7 @@ from .e67_h_gated import E67HGated, E67HGatedDiagonal, E67HGatedLowRank
 from .e68_self_gating import E68SelfGating, E68SelfGatingStandard, E68SelfGatingInverse
 from .gated_delta_net import GatedDeltaNet, GatedDeltaNetVector
 from .fla_gated_delta import FLAGatedDeltaNetLayer
+from .external_gdn2 import GDN2ExternalLayer
 from .e91_matmat import E91MatMat
 from .e92_matmat import E92MatMat
 from .e93_minimal import E93Minimal
@@ -219,6 +220,7 @@ def get_ladder_level(level):
         'gdn': GatedDeltaNet,  # GatedDeltaNet: ICLR 2025 baseline (matrix state)
         'gdn-vec': GatedDeltaNetVector,  # GatedDeltaNet Vector: Simplified (vector state)
         'fla-gdn': FLAGatedDeltaNetLayer,  # FLA GatedDeltaNet: Optimized Triton kernels (ICLR 2025)
+        'gdn2': GDN2ExternalLayer,  # External NVIDIA GatedDeltaNet-2 checkout
         'llama': LlamaLayer,  # Llama Transformer: attention baseline
         70: E70MatrixLinear,  # E70: Matrix Linear (E42-style) - linear accum + self-gate
         '70n32': lambda **kw: E70MatrixLinear(n_state=32, **kw),
@@ -791,7 +793,7 @@ def get_ladder_level(level):
             n_state = int(match.group(2)) if match.group(2) else 32
             return lambda **kw: E88FLAHybrid(**{**kw, 'n_heads': n_heads, 'n_state': n_state})
 
-    raise ValueError(f"Invalid level {level}. Available: 0-6, 8-17, 18a/b/e, 19a/b/d/e, 20-26, 28, 30-68, gdn, gdn-vec, fla-gdn, llama, mamba2, E75h*n*, E88h*n*")
+    raise ValueError(f"Invalid level {level}. Available: 0-6, 8-17, 18a/b/e, 19a/b/d/e, 20-26, 28, 30-68, gdn, gdn-vec, fla-gdn, gdn2, llama, mamba2, E75h*n*, E88h*n*")
 
 
 class LadderLM(nn.Module):

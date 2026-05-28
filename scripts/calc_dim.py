@@ -146,6 +146,56 @@ def calc_fla_gdn_params(dim, depth, expansion=2.0, vocab_size=256):
     return layers_total + embed
 
 
+def calc_gdn2_params(dim, depth, expansion=2.0, n_heads=None, vocab_size=256):
+    """Approximate parameters for the external GDN-2 layer used by Emender."""
+    if n_heads is None:
+        n_heads = max(1, dim // 128)
+    if dim % n_heads != 0:
+        for candidate in range(n_heads, 0, -1):
+            if dim % candidate == 0:
+                n_heads = candidate
+                break
+    head_dim = dim // n_heads
+    value_head_dim = int(head_dim * expansion)
+    key_dim = n_heads * head_dim
+    value_dim = n_heads * value_head_dim
+    per_layer = (
+        dim * key_dim * 2
+        + dim * value_dim
+        + dim * key_dim
+        + dim * value_dim
+        + dim * value_head_dim
+        + value_head_dim * key_dim
+        + dim * value_head_dim
+        + value_head_dim * value_dim
+        + value_dim * dim
+        + (key_dim * 2 + value_dim) * 4
+        + n_heads
+        + key_dim
+        + 2 * n_heads * value_head_dim
+        + dim
+    )
+    return vocab_size * dim + depth * per_layer + dim
+
+
+def calc_mamba3_params(dim, depth, expand=2, d_state=128, headdim=64, mimo_rank=4, is_mimo=False, vocab_size=256):
+    """Approximate parameters for official Mamba-3."""
+    d_inner = dim * expand
+    nheads = d_inner // headdim
+    rank = mimo_rank if is_mimo else 1
+    num_rope_angles = max(1, d_state // 4)
+    in_proj_out = 2 * d_inner + 2 * d_state * rank + 3 * nheads + num_rope_angles
+    per_layer = (
+        dim * in_proj_out
+        + 2 * nheads * rank * d_state
+        + (3 * nheads * rank * headdim if is_mimo else 0)
+        + nheads
+        + d_inner * dim
+        + 2 * dim
+    )
+    return vocab_size * dim + depth * per_layer + dim
+
+
 def calc_transformer_params(dim, depth, n_heads=8, expansion=4.0, vocab_size=256):
     """Calculate Transformer (Llama-style) parameters."""
     # Self-attention: Q, K, V, O projections
@@ -586,6 +636,20 @@ def main():
         dim, params = find_dim_for_params(calc_mamba2_params, target, depth=args.depth)
         config = {'model': 'mamba2', 'dim': dim, 'depth': args.depth, 'params': params}
 
+    elif model == 'mamba3':
+        dim, params = find_dim_for_params(
+            calc_mamba3_params, target, depth=args.depth,
+            expand=int(args.expansion), d_state=128,
+        )
+        config = {
+            'model': 'mamba3',
+            'dim': dim,
+            'depth': args.depth,
+            'expand': int(args.expansion),
+            'd_state': 128,
+            'params': params,
+        }
+
     elif model == 'm2rnn':
         # Default tied-head M2RNN baseline.
         dim, params = find_dim_for_params(
@@ -629,6 +693,13 @@ def main():
             calc_fla_gdn_params, target, depth=args.depth, expansion=args.expansion
         )
         config = {'model': 'fla-gdn', 'dim': dim, 'depth': args.depth,
+                  'expansion': args.expansion, 'params': params}
+
+    elif model == 'gdn2':
+        dim, params = find_dim_for_params(
+            calc_gdn2_params, target, depth=args.depth, expansion=args.expansion
+        )
+        config = {'model': 'gdn2', 'dim': dim, 'depth': args.depth,
                   'expansion': args.expansion, 'params': params}
 
     elif model.startswith('e75'):
