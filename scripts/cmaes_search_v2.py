@@ -74,6 +74,7 @@ PROJECTION_CHUNK_SIZE = 0
 PROBE_TIMEOUT_SECONDS = int(os.environ.get('CMAES_PROBE_TIMEOUT_SECONDS', '600'))
 CMAES_MAX_VALID_ATTEMPTS = int(os.environ.get('CMAES_MAX_VALID_ATTEMPTS', '20'))
 PARAM_TOLERANCE = float(os.environ.get('CMAES_PARAM_TOLERANCE', '0.10'))
+PARAM_VOCAB_SIZE = 256
 
 # Progressive training settings (set from args in main())
 PROGRESSIVE = False
@@ -84,6 +85,19 @@ PHASE2_CHUNK_SIZE = 32768
 # Dynamic GPU file (set from args in main())
 GPU_FILE = None
 DEFAULT_GPUS = [0, 1, 2, 3, 4, 5, 6, 7]
+
+
+def resolve_vocab_size(tokenizer_name):
+    """Return the vocab size that train.py will use for this tokenizer setting."""
+    if tokenizer_name is None:
+        return 256
+    try:
+        import tiktoken
+    except ImportError as exc:
+        raise RuntimeError(
+            f"--tokenizer {tokenizer_name} requires tiktoken for parameter accounting"
+        ) from exc
+    return tiktoken.get_encoding(tokenizer_name).n_vocab
 
 
 def get_available_gpus():
@@ -469,6 +483,7 @@ def estimate_params_for_config(params, model_type):
     """Estimate parameter count for a configuration."""
     dim = params.get('dim', 1024)
     depth = params.get('depth', 20)
+    vocab_size = PARAM_VOCAB_SIZE
 
     if model_type in ('e88', 'e88_fused', 'e88-linear', 'e88-raw', 'e88-nogate', 'e88-minimal', 'e88-wgate'):
         # All E88 variants have ~same param count (ablations only affect computation, not params)
@@ -476,14 +491,15 @@ def estimate_params_for_config(params, model_type):
         use_gate = model_type not in ('e88-nogate', 'e88-minimal')
         return calc_e88_params(dim, depth=depth, n_heads=params.get('n_heads', 96),
                                n_state=params.get('n_state', 32),
-                               expansion=params.get('expansion', 1.0), use_gate=use_gate)
+                               expansion=params.get('expansion', 1.0),
+                               vocab_size=vocab_size, use_gate=use_gate)
     elif model_type in ('e97', 'e97-raw', 'e97-linear'):
         n_heads = params.get('n_heads', 96)
         n_state = params.get('n_state', 32)
         expansion = params.get('expansion', 1.0)
         base = calc_e88_params(
             dim, depth=depth, n_heads=n_heads, n_state=n_state,
-            expansion=expansion, use_gate=True,
+            expansion=expansion, vocab_size=vocab_size, use_gate=True,
         )
         value_dim = int(n_heads * n_state * expansion)
         split_edit_proj = dim * (n_heads * n_state + value_dim)
@@ -492,11 +508,12 @@ def estimate_params_for_config(params, model_type):
         return calc_m2rnn_params(dim, depth=depth, n_heads=params.get('n_heads', 128),
                                  n_state=params.get('n_state', 16),
                                  expansion=params.get('expansion', 1.0),
-                                 use_gate=True, use_conv=False)
+                                 vocab_size=vocab_size, use_gate=True, use_conv=False)
     elif model_type == 'm2rnn-paper':
         return calc_m2rnn_params(dim, depth=depth, n_heads=params.get('n_heads', 128),
                                  n_state=params.get('n_state', 16),
                                  expansion=1.0, use_gate=True, use_conv=True,
+                                 vocab_size=vocab_size,
                                  d_conv=4, paper_shape=True, k_head_dim=64,
                                  v_head_dim=params.get('n_state', 16),
                                  output_norm=True)
@@ -511,7 +528,7 @@ def estimate_params_for_config(params, model_type):
         qgo_params = 3 * dim * dim_inner
         decay_params = dim * n_heads + 2 * n_heads
         per_layer = kv_params + qgo_params + decay_params
-        vocab = 256
+        vocab = vocab_size
         embed = vocab * dim
         return per_layer * depth + embed
     elif model_type == 'e92':
@@ -521,7 +538,7 @@ def estimate_params_for_config(params, model_type):
         n_state = params.get('n_state', 16)
         flat = n_heads * n_state
         per_layer = 3 * dim * flat + dim * n_heads + n_heads * n_state * n_state + flat * dim
-        vocab = 256
+        vocab = vocab_size
         embed = vocab * dim
         return per_layer * depth + embed
     elif model_type == 'e93':
@@ -530,7 +547,7 @@ def estimate_params_for_config(params, model_type):
         n_state = params.get('n_state', 16)
         m_state = dim  # E93Minimal default: M = dim
         per_layer = dim * n_state + dim * m_state + dim + n_state * n_state + n_state * m_state * dim
-        vocab = 256
+        vocab = vocab_size
         embed = vocab * dim
         return per_layer * depth + embed
     elif model_type == 'e93_no_decay':
@@ -538,7 +555,7 @@ def estimate_params_for_config(params, model_type):
         n_state = params.get('n_state', 16)
         m_state = dim
         per_layer = dim * n_state + dim * m_state + n_state * n_state + n_state * m_state * dim
-        vocab = 256
+        vocab = vocab_size
         embed = vocab * dim
         return per_layer * depth + embed
     elif model_type in ('e94', 'e94r'):
@@ -548,7 +565,7 @@ def estimate_params_for_config(params, model_type):
         head_dim = params.get('n_state', params.get('head_dim', 16))
         N = head_dim
         L = depth
-        vocab = 50000 if TOKENIZER_NAME else 256
+        vocab = vocab_size
         embed = vocab * dim   # tied with lm_head
         norm = 2 * dim * (L + 1)
         k_proj = L * dim * H * N
@@ -562,46 +579,57 @@ def estimate_params_for_config(params, model_type):
         head_dim = params.get('n_state', params.get('head_dim', 16))
         N = head_dim
         L = depth
-        vocab = 50000 if TOKENIZER_NAME else 256
+        vocab = vocab_size
         embed = vocab * N + vocab * head_dim
         w_h_time = L * H * N * N
         w_h_layer = (L - 1) * H * N * N
         head = N * head_dim * vocab
         return embed + w_h_time + w_h_layer + head
     elif model_type == 'fla-gdn':
-        return calc_fla_gdn_params(dim, depth=depth, expansion=params.get('expansion', 2))
+        return calc_fla_gdn_params(dim, depth=depth, expansion=params.get('expansion', 2),
+                                   vocab_size=vocab_size)
     elif model_type == 'gdn2':
         return calc_gdn2_params(
             dim, depth=depth, expansion=params.get('expansion', 2),
-            n_heads=params.get('n_heads', None),
+            n_heads=params.get('n_heads', None), vocab_size=vocab_size,
         )
     elif model_type == 'mamba2':
         return calc_mamba2_params(dim, depth=depth, expand=params.get('expand', 2),
-                                    d_state=params.get('d_state', 64))
+                                  d_state=params.get('d_state', 64),
+                                  vocab_size=vocab_size)
     elif model_type == 'mamba3':
         return calc_mamba3_params(
             dim, depth=depth, expand=params.get('expand', 2),
-            d_state=params.get('d_state', 128),
+            d_state=params.get('d_state', 128), vocab_size=vocab_size,
         )
     elif model_type == 'transformer':
         return calc_transformer_params(dim, depth=depth, n_heads=params.get('n_heads', 16),
-                                       expansion=params.get('expansion', 4))
+                                       expansion=params.get('expansion', 4),
+                                       vocab_size=vocab_size)
     elif model_type == 'mingru':
-        return calc_mingru_params(dim, depth=depth, expansion=params.get('expansion', 2))
+        return calc_mingru_params(dim, depth=depth, expansion=params.get('expansion', 2),
+                                  vocab_size=vocab_size)
     elif model_type == 'minlstm':
-        return calc_minlstm_params(dim, depth=depth, expansion=params.get('expansion', 2))
+        return calc_minlstm_params(dim, depth=depth, expansion=params.get('expansion', 2),
+                                   vocab_size=vocab_size)
     elif model_type == 'e1':
-        return calc_e1_params(dim, depth=depth, expansion=params.get('expansion', 2))
+        return calc_e1_params(dim, depth=depth, expansion=params.get('expansion', 2),
+                              vocab_size=vocab_size)
     elif model_type == 'e23':
-        return calc_e23_params(dim, depth=depth, n_slots=params.get('n_slots', 64))
+        return calc_e23_params(dim, depth=depth, n_slots=params.get('n_slots', 64),
+                               vocab_size=vocab_size)
     elif model_type == 'e42':
-        return calc_e42_params(dim, depth=depth, expansion=params.get('expansion', 2))
+        return calc_e42_params(dim, depth=depth, expansion=params.get('expansion', 2),
+                               vocab_size=vocab_size)
     elif model_type == 'e75':
         return calc_e75_params(dim, depth=depth, n_heads=params.get('n_heads', 8),
-                               n_state=params.get('n_state', 32), expansion=params.get('expansion', 1.0))
+                               n_state=params.get('n_state', 32),
+                               expansion=params.get('expansion', 1.0),
+                               vocab_size=vocab_size)
     elif model_type == 'e1h':
         return calc_e1h_params(dim, depth=depth, n_heads=params.get('n_heads', 16),
-                               n_state=params.get('n_state', 32))
+                               n_state=params.get('n_state', 32),
+                               vocab_size=vocab_size)
     else:
         return 4 * dim * dim * depth  # Rough estimate
 
@@ -2099,10 +2127,12 @@ def main():
 
     # Set global compile, sequence, and parameter-window settings
     global COMPILE_ENABLED, COMPILE_MODE, USE_TRITON_E88, CHUNK_SIZE, GRADIENT_CHECKPOINTING, PROJECTION_CHUNK_SIZE
-    global PARAM_TOLERANCE
+    global PARAM_TOLERANCE, PARAM_VOCAB_SIZE, TOKENIZER_NAME
     global PROGRESSIVE, PHASE1_MINUTES, PHASE2_MINUTES, PHASE2_CHUNK_SIZE
     if args.param_tolerance is not None:
         PARAM_TOLERANCE = args.param_tolerance
+    TOKENIZER_NAME = args.tokenizer
+    PARAM_VOCAB_SIZE = resolve_vocab_size(args.tokenizer)
     COMPILE_ENABLED = args.compile
     COMPILE_MODE = args.compile_mode
     USE_TRITON_E88 = args.use_triton_e88
@@ -2187,9 +2217,7 @@ def main():
     DATA_PATH = args.data
     print(f"Data: {args.data}")
     if args.tokenizer:
-        global TOKENIZER_NAME
-        TOKENIZER_NAME = args.tokenizer
-        print(f"Tokenizer: {args.tokenizer}")
+        print(f"Tokenizer: {args.tokenizer} (vocab_size={PARAM_VOCAB_SIZE})")
 
     # Log to file
     log_file = os.path.join(output_dir, 'search.log')

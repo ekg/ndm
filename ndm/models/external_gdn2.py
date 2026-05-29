@@ -96,6 +96,8 @@ class GDN2ExternalLayer(nn.Module):
         super().__init__()
         GatedDeltaNet2 = _load_gdn2_class()
 
+        if num_heads is None:
+            num_heads = kwargs.get("n_heads")
         if use_conv is None or use_conv is False:
             use_conv = True
 
