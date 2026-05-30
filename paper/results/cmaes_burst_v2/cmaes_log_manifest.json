@@ -1,0 +1,1006 @@
+{
+  "generated_at_utc": "2026-05-30T20:24:56Z",
+  "task_id": "inventory-cma-es",
+  "scope": "Read-only inventory of CMA-ES run logs and related racer artifacts for the v2 burst figure.",
+  "raw_logs_modified": false,
+  "fresh_corrected_1300m": {
+    "inspected_at_utc": "2026-05-30T20:24:56Z",
+    "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529",
+    "resolved_path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529",
+    "accessible": true,
+    "setup": {
+      "target_params": "1300M",
+      "param_tolerance": 0.03,
+      "tokenizer": "p50k_base",
+      "chunk_size": 2048,
+      "data": "/home/erikg/elman/data/pile.txt",
+      "train_minutes": 15.0,
+      "fitness": "AvgLoss over logged stdout training-loss windows",
+      "final_loss_definition": "FINAL_LOSS_LAST100; not the CMA objective"
+    },
+    "setup_files": {
+      "anchors_corrected": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/anchors_corrected.json",
+      "anchors_gdn2_primary": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/anchors_gdn2_primary.json",
+      "launch_e97_queue": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/launch_e97_queue.sh",
+      "launch_gdn2": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/launch_gdn2.sh",
+      "launcher_logs_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs"
+    },
+    "runs": [
+      {
+        "id": "redo_1300m_e97",
+        "family": "E97 normal",
+        "model": "e97",
+        "status": "complete_usable",
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97/e97_20260529_152252",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/e97_queue.log",
+        "results_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97/e97_20260529_152252/results.json",
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97/e97_20260529_152252/generations.jsonl",
+        "counts": {
+          "eval_dirs": 64,
+          "done_files": 64,
+          "params_json_files": 64,
+          "stdout_txt_files": 64,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 64,
+          "args_json_files": 204,
+          "retained_checkpoint_files": 3,
+          "generations_jsonl_rows": 8,
+          "results_all_results": 64
+        },
+        "generation_wallclock": {
+          "first": "2026-05-29T16:31:00Z",
+          "last": "2026-05-30T00:23:42Z"
+        },
+        "results_summary": {
+          "total_evals": 64,
+          "elapsed_hours": 9.01373437497351,
+          "best_eval_id": 59,
+          "best_loss": 5.973340828402367,
+          "best_final_loss": 5.5386,
+          "best_actual_params": 1274697304,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97/e97_20260529_152252/eval_59/params.json",
+          "best_params": {
+            "dim": 2176,
+            "n_heads": 170,
+            "n_state": 32,
+            "depth": 14,
+            "lr": 0.0010403731352768883,
+            "batch_size": 2
+          },
+          "best_final_loss_eval_id": 45,
+          "best_final_loss_value": 5.5112
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97/e97_20260529_152252/eval_59/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 10.1139,
+          "last_step": 1690,
+          "last_step_loss": 5.4131,
+          "step_loss_lines": 169,
+          "final_loss_last100": 5.5386
+        }
+      },
+      {
+        "id": "redo_1300m_e97_raw",
+        "family": "E97 raw-update",
+        "model": "e97-raw",
+        "status": "complete_usable",
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-raw/e97-raw_20260530_002342",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/e97_queue.log",
+        "results_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-raw/e97-raw_20260530_002342/results.json",
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-raw/e97-raw_20260530_002342/generations.jsonl",
+        "counts": {
+          "eval_dirs": 80,
+          "done_files": 80,
+          "params_json_files": 80,
+          "stdout_txt_files": 80,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 80,
+          "args_json_files": 251,
+          "retained_checkpoint_files": 3,
+          "generations_jsonl_rows": 10,
+          "results_all_results": 80
+        },
+        "generation_wallclock": {
+          "first": "2026-05-30T01:34:28Z",
+          "last": "2026-05-30T11:32:53Z"
+        },
+        "results_summary": {
+          "total_evals": 80,
+          "elapsed_hours": 11.15292624089453,
+          "best_eval_id": 58,
+          "best_loss": 5.951101578947369,
+          "best_final_loss": 5.4738,
+          "best_actual_params": 1265553184,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-raw/e97-raw_20260530_002342/eval_58/params.json",
+          "best_params": {
+            "dim": 2432,
+            "n_heads": 416,
+            "n_state": 16,
+            "depth": 10,
+            "lr": 0.0009851067699366818,
+            "batch_size": 3
+          }
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-raw/e97-raw_20260530_002342/eval_58/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 10.7249,
+          "last_step": 1900,
+          "last_step_loss": 5.5399,
+          "step_loss_lines": 190,
+          "final_loss_last100": 5.4738
+        }
+      },
+      {
+        "id": "redo_1300m_gdn2",
+        "family": "GDN2",
+        "model": "gdn2",
+        "status": "complete_usable",
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/gdn2/gdn2_20260529_152252",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/gdn2.log",
+        "results_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/gdn2/gdn2_20260529_152252/results.json",
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/gdn2/gdn2_20260529_152252/generations.jsonl",
+        "counts": {
+          "eval_dirs": 96,
+          "done_files": 96,
+          "params_json_files": 96,
+          "stdout_txt_files": 96,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 96,
+          "args_json_files": 269,
+          "retained_checkpoint_files": 3,
+          "generations_jsonl_rows": 12,
+          "results_all_results": 96
+        },
+        "generation_wallclock": {
+          "first": "2026-05-29T16:39:59Z",
+          "last": "2026-05-30T05:15:20Z"
+        },
+        "results_summary": {
+          "total_evals": 96,
+          "elapsed_hours": 13.874378373755349,
+          "best_eval_id": 13,
+          "best_loss": 6.384979615384616,
+          "best_final_loss": 5.8386,
+          "best_actual_params": 1262599748,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/gdn2/gdn2_20260529_152252/eval_13/params.json",
+          "best_params": {
+            "dim": 1664,
+            "expansion": 2,
+            "depth": 10,
+            "n_heads": 58,
+            "lr": 0.0020992079360665113,
+            "batch_size": 1
+          },
+          "best_final_loss_eval_id": 90,
+          "best_final_loss_value": 5.7922
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/gdn2/gdn2_20260529_152252/eval_13/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 15.4473,
+          "last_step": 2600,
+          "last_step_loss": 6.0425,
+          "step_loss_lines": 260,
+          "final_loss_last100": 5.8386
+        }
+      },
+      {
+        "id": "redo_1300m_e97_linear",
+        "family": "E97 linear-state",
+        "model": "e97-linear",
+        "status": "complete_usable",
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-linear/e97-linear_20260530_113253",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/e97_queue.log",
+        "results_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-linear/e97-linear_20260530_113253/results.json",
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-linear/e97-linear_20260530_113253/generations.jsonl",
+        "counts": {
+          "eval_dirs": 64,
+          "done_files": 64,
+          "params_json_files": 64,
+          "stdout_txt_files": 64,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 64,
+          "args_json_files": 185,
+          "retained_checkpoint_files": 3,
+          "generations_jsonl_rows": 8,
+          "results_all_results": 64
+        },
+        "generation_wallclock": {
+          "first": "2026-05-30T12:44:05Z",
+          "last": "2026-05-30T20:12:47Z"
+        },
+        "results_summary": {
+          "total_evals": 64,
+          "elapsed_hours": 8.665143682029512,
+          "best_eval_id": 34,
+          "best_loss": 6.096740782122906,
+          "best_final_loss": 5.6628,
+          "best_actual_params": 1264700224,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-linear/e97-linear_20260530_113253/eval_34/params.json",
+          "best_params": {
+            "dim": 1920,
+            "n_heads": 208,
+            "n_state": 32,
+            "depth": 13,
+            "lr": 0.0007080609223547477,
+            "batch_size": 3
+          }
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e97-linear/e97-linear_20260530_113253/eval_34/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 10.4132,
+          "last_step": 1790,
+          "last_step_loss": 5.4503,
+          "step_loss_lines": 179,
+          "final_loss_last100": 5.6628
+        }
+      },
+      {
+        "id": "redo_1300m_e88",
+        "family": "E88 normal rerun",
+        "model": "e88",
+        "status": "partial_in_flight_no_results_json",
+        "counts_may_change": true,
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e88/e88_20260530_151323",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/e88.log",
+        "results_json": null,
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e88/e88_20260530_151323/generations.jsonl",
+        "counts": {
+          "eval_dirs": 36,
+          "done_files": 34,
+          "params_json_files": 36,
+          "stdout_txt_files": 34,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 34,
+          "args_json_files": 136,
+          "retained_checkpoint_files": 5,
+          "generations_jsonl_rows": 7,
+          "results_all_results": 0
+        },
+        "generation_wallclock": {
+          "first": "2026-05-30T16:28:33Z",
+          "last": "2026-05-30T19:57:03Z"
+        },
+        "partial_summary": {
+          "best_completed_eval_id_from_done": 27,
+          "best_loss_from_done": 6.108605095541401,
+          "best_final_loss_from_done": 5.6477,
+          "best_actual_params_from_done": 1305634890,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e88/e88_20260530_151323/eval_27/params.json",
+          "best_params_from_done": {
+            "dim": 1792,
+            "n_heads": 383,
+            "n_state": 32,
+            "depth": 11,
+            "lr": 0.0015330074269705842,
+            "batch_size": 2
+          }
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e88/e88_20260530_151323/eval_27/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 10.5968,
+          "last_step": 1570,
+          "last_step_loss": 5.2407,
+          "step_loss_lines": 157,
+          "final_loss_last100": 5.6477
+        }
+      },
+      {
+        "id": "redo_1300m_transformer",
+        "family": "Transformer rerun",
+        "model": "transformer",
+        "status": "partial_in_flight_no_results_json",
+        "counts_may_change": true,
+        "run_dir": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/transformer/transformer_20260530_042721",
+        "top_log": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/logs/transformer.log",
+        "results_json": null,
+        "generations_jsonl": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/transformer/transformer_20260530_042721/generations.jsonl",
+        "counts": {
+          "eval_dirs": 60,
+          "done_files": 59,
+          "params_json_files": 60,
+          "stdout_txt_files": 59,
+          "stderr_txt_files": 0,
+          "batch_size_txt_files": 59,
+          "args_json_files": 60,
+          "retained_checkpoint_files": 6,
+          "generations_jsonl_rows": 7,
+          "results_all_results": 0
+        },
+        "generation_wallclock": {
+          "first": "2026-05-30T06:40:16Z",
+          "last": "2026-05-30T19:33:50Z"
+        },
+        "partial_summary": {
+          "best_completed_eval_id_from_done": 42,
+          "best_loss_from_done": 6.567268253968255,
+          "best_final_loss_from_done": 6.5673,
+          "best_actual_params_from_done": 1306322944,
+          "best_params_json": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/transformer/transformer_20260530_042721/eval_42/params.json",
+          "best_params_from_done": {
+            "dim": 2048,
+            "n_heads": 15,
+            "expansion": 5,
+            "depth": 17,
+            "lr": 0.0004510648520990279,
+            "batch_size": 8
+          }
+        },
+        "sample_best_eval_stdout": {
+          "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/transformer/transformer_20260530_042721/eval_42/stdout.txt",
+          "first_step": 10,
+          "first_step_loss": 13.1698,
+          "last_step": 630,
+          "last_step_loss": 5.9826,
+          "step_loss_lines": 63,
+          "final_loss_last100": 6.5673
+        }
+      }
+    ],
+    "paper_impacting_observation": {
+      "e97_raw_best_loss": 5.951101578947369,
+      "e97_normal_best_loss": 5.973340828402367,
+      "raw_ahead_of_normal": true,
+      "note": "Both values are single corrected CMA reruns; E88 and Transformer corrected reruns were still partial at inspection time."
+    }
+  },
+  "primary_roots": [
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526",
+      "accessible": true,
+      "protocol_path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/protocol.md",
+      "anchors_path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/anchors.json",
+      "configured_target_params": "1270M",
+      "configured_chunk_size": 2048,
+      "configured_tokenizer": "p50k_base",
+      "configured_candidate_minutes": 15.0,
+      "configured_popsize": 8,
+      "configured_min_generations": 8
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526",
+      "accessible": true,
+      "protocol_path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/protocol.md",
+      "anchors_path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/anchors.json",
+      "configured_target_params": "1270M",
+      "configured_chunk_size": 2048,
+      "configured_tokenizer": "p50k_base",
+      "configured_candidate_minutes": 15.0,
+      "configured_popsize": 8,
+      "configured_min_generations": 8
+    },
+    {
+      "path": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528",
+      "accessible": true,
+      "protocol_path": null,
+      "anchors_path": null,
+      "configured_target_params": "1270M",
+      "configured_chunk_size": 2048,
+      "configured_tokenizer": "p50k_base",
+      "configured_candidate_minutes": 15.0,
+      "configured_popsize": 8,
+      "configured_min_generations": 8,
+      "launch_reference": "docs/HANDOFF_E97_GDN2_CMAES_20260528.md"
+    }
+  ],
+  "runs": [
+    {
+      "id": "ctx2k_e88_delta",
+      "family": "E88 delta",
+      "model": "e88",
+      "status": "complete_usable",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88/e88_20260526_030514",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88.log",
+      "results_json": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88/e88_20260526_030514/results.json",
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88/e88_20260526_030514/generations.jsonl",
+      "counts": {
+        "eval_dirs": 128,
+        "done_files": 128,
+        "params_json_files": 128,
+        "stdout_txt_files": 128,
+        "args_json_files": 483,
+        "retained_checkpoint_files": 3,
+        "generations_jsonl_rows": 16,
+        "results_all_results": 128
+      },
+      "generation_wallclock": {
+        "first": "2026-05-26T05:33:19Z",
+        "last": "2026-05-27T16:02:45Z"
+      },
+      "results_summary": {
+        "total_evals": 128,
+        "elapsed_hours": 36.95879488223129,
+        "best_eval_id": 99,
+        "best_loss": 5.997367878787879,
+        "best_final_loss": 5.5529,
+        "best_actual_params": 1148007536,
+        "best_params": {
+          "dim": 2048,
+          "n_heads": 348,
+          "n_state": 32,
+          "depth": 10,
+          "lr": 0.0009972765272808343,
+          "batch_size": 2
+        }
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88/e88_20260526_030514/eval_127/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 10.8674,
+        "last_step": 1390,
+        "last_step_loss": 5.386,
+        "step_loss_lines": 139
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "E88"
+      }
+    },
+    {
+      "id": "ctx2k_e88_raw",
+      "family": "E88 raw-write",
+      "model": "e88-raw",
+      "status": "complete_usable",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88-raw/e88-raw_20260526_030514",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88-raw.log",
+      "results_json": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88-raw/e88-raw_20260526_030514/results.json",
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88-raw/e88-raw_20260526_030514/generations.jsonl",
+      "counts": {
+        "eval_dirs": 136,
+        "done_files": 136,
+        "params_json_files": 136,
+        "stdout_txt_files": 136,
+        "args_json_files": 561,
+        "retained_checkpoint_files": 3,
+        "generations_jsonl_rows": 17,
+        "results_all_results": 136
+      },
+      "generation_wallclock": {
+        "first": "2026-05-26T05:33:07Z",
+        "last": "2026-05-27T18:52:10Z"
+      },
+      "results_summary": {
+        "total_evals": 136,
+        "elapsed_hours": 39.782313733498256,
+        "best_eval_id": 119,
+        "best_loss": 6.039494047619048,
+        "best_final_loss": 5.5909,
+        "best_actual_params": 1149343356,
+        "best_params": {
+          "dim": 1792,
+          "n_heads": 362,
+          "n_state": 32,
+          "depth": 11,
+          "lr": 0.0009412965670480728,
+          "batch_size": 2
+        }
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_e88_delta_raw_warm512_20260526/e88-raw/e88-raw_20260526_030514/eval_135/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 10.4797,
+        "last_step": 1450,
+        "last_step_loss": 5.4675,
+        "step_loss_lines": 145
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "E88"
+      }
+    },
+    {
+      "id": "ctx2k_fla_gdn",
+      "family": "FLA-GDN",
+      "model": "fla-gdn",
+      "status": "complete_usable",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/fla-gdn/fla-gdn_20260526_031318",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/fla-gdn.log",
+      "results_json": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/fla-gdn/fla-gdn_20260526_031318/results.json",
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/fla-gdn/fla-gdn_20260526_031318/generations.jsonl",
+      "counts": {
+        "eval_dirs": 160,
+        "done_files": 160,
+        "params_json_files": 160,
+        "stdout_txt_files": 160,
+        "args_json_files": 580,
+        "retained_checkpoint_files": 3,
+        "generations_jsonl_rows": 20,
+        "results_all_results": 160
+      },
+      "generation_wallclock": {
+        "first": "2026-05-26T05:55:13Z",
+        "last": "2026-05-28T01:16:34Z"
+      },
+      "results_summary": {
+        "total_evals": 160,
+        "elapsed_hours": 46.05435635017024,
+        "best_eval_id": 141,
+        "best_loss": 6.1103983333333325,
+        "best_final_loss": 5.6165,
+        "best_actual_params": 1147668480,
+        "best_params": {
+          "dim": 3456,
+          "expansion": 2,
+          "depth": 12,
+          "n_heads": 38,
+          "lr": 0.000862655652465934,
+          "batch_size": 2
+        }
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/fla-gdn/fla-gdn_20260526_031318/eval_159/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 11.0506,
+        "last_step": 1610,
+        "last_step_loss": 5.4596,
+        "step_loss_lines": 161
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "fla-gdn"
+      }
+    },
+    {
+      "id": "ctx2k_m2rnn_home_xma",
+      "family": "M2RNN",
+      "model": "m2rnn",
+      "status": "complete_usable",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/m2rnn_home_xma/m2rnn_20260526_132728",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/m2rnn_home_xma.log",
+      "results_json": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/m2rnn_home_xma/m2rnn_20260526_132728/results.json",
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/m2rnn_home_xma/m2rnn_20260526_132728/generations.jsonl",
+      "counts": {
+        "eval_dirs": 144,
+        "done_files": 144,
+        "params_json_files": 144,
+        "stdout_txt_files": 144,
+        "args_json_files": 743,
+        "retained_checkpoint_files": 3,
+        "generations_jsonl_rows": 18,
+        "results_all_results": 144
+      },
+      "generation_wallclock": {
+        "first": "2026-05-26T16:02:35Z",
+        "last": "2026-05-28T10:26:26Z"
+      },
+      "results_summary": {
+        "total_evals": 144,
+        "elapsed_hours": 44.982980733513834,
+        "best_eval_id": 44,
+        "best_loss": 6.062581521739131,
+        "best_final_loss": 6.0626,
+        "best_actual_params": 1144418688,
+        "best_params": {
+          "dim": 2304,
+          "n_heads": 612,
+          "n_state": 16,
+          "depth": 10,
+          "lr": 0.000560674702835787,
+          "batch_size": 5
+        },
+        "best_final_loss_eval_id": 125,
+        "best_final_loss_value": 5.6914
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/m2rnn_home_xma/m2rnn_20260526_132728/eval_143/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 10.7657,
+        "last_step": 770,
+        "last_step_loss": 5.5537,
+        "step_loss_lines": 77
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "m2rnn"
+      }
+    },
+    {
+      "id": "ctx2k_mamba2",
+      "family": "Mamba2",
+      "model": "mamba2",
+      "status": "partial_no_results_json",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2/mamba2_20260527_183522",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2.log",
+      "results_json": null,
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2/mamba2_20260527_183522/generations.jsonl",
+      "counts": {
+        "eval_dirs": 158,
+        "done_files": 157,
+        "params_json_files": 158,
+        "stdout_txt_files": 157,
+        "args_json_files": 539,
+        "retained_checkpoint_files": 8,
+        "generations_jsonl_rows": 19,
+        "results_all_results": 0
+      },
+      "generation_wallclock": {
+        "first": "2026-05-27T21:14:09Z",
+        "last": "2026-05-29T14:22:12Z"
+      },
+      "partial_summary": {
+        "best_completed_eval_id_from_done": 58,
+        "best_loss_from_done": 6.056025748502994,
+        "best_final_loss_from_done": 5.6441,
+        "best_actual_params_from_done": 1209400320,
+        "best_params_from_done": {
+          "dim": 1920,
+          "d_state": 64,
+          "expand": 4,
+          "depth": 27,
+          "lr": 0.0014174671284459639,
+          "batch_size": 2
+        },
+        "incomplete_eval_dir": "eval_157",
+        "incomplete_eval_note": "params/args exist, but no .done or stdout.txt was present."
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2/mamba2_20260527_183522/eval_156/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 10.3572,
+        "last_step": 1360,
+        "last_step_loss": 5.6324,
+        "step_loss_lines": 136
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "mamba2"
+      }
+    },
+    {
+      "id": "ctx2k_transformer",
+      "family": "Transformer",
+      "model": "transformer",
+      "status": "complete_usable",
+      "run_dir": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/transformer/transformer_20260526_031319",
+      "top_log": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/transformer.log",
+      "results_json": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/transformer/transformer_20260526_031319/results.json",
+      "generations_jsonl": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/transformer/transformer_20260526_031319/generations.jsonl",
+      "counts": {
+        "eval_dirs": 160,
+        "done_files": 160,
+        "params_json_files": 160,
+        "stdout_txt_files": 160,
+        "args_json_files": 651,
+        "retained_checkpoint_files": 3,
+        "generations_jsonl_rows": 20,
+        "results_all_results": 160
+      },
+      "generation_wallclock": {
+        "first": "2026-05-26T05:33:29Z",
+        "last": "2026-05-27T23:32:56Z"
+      },
+      "results_summary": {
+        "total_evals": 160,
+        "elapsed_hours": 44.32708335810238,
+        "best_eval_id": 140,
+        "best_loss": 5.904592156862745,
+        "best_final_loss": 5.4683,
+        "best_actual_params": 1157887744,
+        "best_params": {
+          "dim": 1664,
+          "n_heads": 10,
+          "expansion": 6,
+          "depth": 19,
+          "lr": 0.000516391216711691,
+          "batch_size": 4
+        },
+        "best_final_loss_eval_id": 18,
+        "best_final_loss_value": 5.4118
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/transformer/transformer_20260526_031319/eval_159/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 13.7796,
+        "last_step": 3510,
+        "last_step_loss": 5.7021,
+        "step_loss_lines": 351
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "llama"
+      }
+    },
+    {
+      "id": "emender_e97",
+      "family": "E97",
+      "model": "e97",
+      "status": "failed_cma_update_after_one_eval",
+      "run_dir": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/e97/e97_20260528_175019",
+      "top_log": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/e97.log",
+      "results_json": null,
+      "generations_jsonl": null,
+      "counts": {
+        "eval_dirs": 1,
+        "done_files": 1,
+        "params_json_files": 1,
+        "stdout_txt_files": 1,
+        "args_json_files": 1,
+        "retained_checkpoint_files": 1,
+        "generations_jsonl_rows": 0,
+        "results_all_results": 0
+      },
+      "failure": {
+        "valid_generation": 18,
+        "error": "ValueError: population size 1 is too small with option CMA_mirrors * popsize < 0.5"
+      },
+      "partial_summary": {
+        "only_eval_id": 0,
+        "loss": 6.326023684210527,
+        "final_loss": 6.326,
+        "actual_params": 1147558806,
+        "params": {
+          "dim": 3072,
+          "n_heads": 79,
+          "n_state": 32,
+          "depth": 21,
+          "lr": 0.0012211070661387916,
+          "batch_size": 61
+        },
+        "actual_batch_size": 10
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/e97/e97_20260528_175019/eval_0/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 11.1033,
+        "last_step": 380,
+        "last_step_loss": 5.4486,
+        "step_loss_lines": 38
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "E97"
+      }
+    },
+    {
+      "id": "emender_gdn2",
+      "family": "GDN2",
+      "model": "gdn2",
+      "status": "failed_cma_update_after_one_eval",
+      "run_dir": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/gdn2/gdn2_20260528_175027",
+      "top_log": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/gdn2.log",
+      "results_json": null,
+      "generations_jsonl": null,
+      "counts": {
+        "eval_dirs": 1,
+        "done_files": 1,
+        "params_json_files": 1,
+        "stdout_txt_files": 1,
+        "args_json_files": 1,
+        "retained_checkpoint_files": 1,
+        "generations_jsonl_rows": 0,
+        "results_all_results": 0
+      },
+      "failure": {
+        "valid_generation": 1,
+        "error": "ValueError: population size 1 is too small with option CMA_mirrors * popsize < 0.5"
+      },
+      "partial_summary": {
+        "only_eval_id": 0,
+        "loss": 7.157100000000001,
+        "final_loss": 7.1571,
+        "actual_params": 1357913856,
+        "params": {
+          "dim": 2688,
+          "expansion": 1,
+          "depth": 20,
+          "n_heads": 32,
+          "lr": 0.0009569170744159106,
+          "batch_size": 80
+        },
+        "actual_batch_size": 6
+      },
+      "sample_eval_stdout": {
+        "path": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/gdn2/gdn2_20260528_175027/eval_0/stdout.txt",
+        "first_step": 10,
+        "first_step_loss": 26.5254,
+        "last_step": 630,
+        "last_step_loss": 5.936,
+        "step_loss_lines": 63
+      },
+      "sample_args": {
+        "seed": 42,
+        "train_minutes": 15.0,
+        "chunk_size": 2048,
+        "tokenizer": "p50k_base",
+        "level": "gdn2"
+      }
+    }
+  ],
+  "field_availability": {
+    "controller_generation_wallclock_utc": "Available in generations.jsonl for complete/partial elman 2K sweeps and corrected 1.3B reruns; unavailable for failed older Emender attempts.",
+    "per_eval_wallclock_start_end": "Not directly logged in stdout.txt or .done files.",
+    "step_counts": "Available in per-eval stdout.txt step lines.",
+    "loss_values": "Available as per-step stdout losses, per-eval .done loss/final_loss, and results.json all_results loss/final_loss where present. Corrected 1.3B stdout also contains FINAL_LOSS_LAST100, but CMA fitness is AvgLoss.",
+    "bpb_values": "Not stored directly in CMA-ES artifacts; derive from loss if needed.",
+    "seeds": "Per-eval args.json records seed 42; top-level results.json does not repeat seed.",
+    "config_ids": "Available via eval_<id> directories, params.json eval_id, .done eval_id, and results.json all_results eval_id.",
+    "batch_size_records": "Corrected 1.3B reruns include per-eval batch_size.txt; older 2K runs include actual/target batch size in .done files.",
+    "configs": "Available via root protocol/anchors where present, corrected-run launch scripts, per-eval params.json/.done, per-run args.json, and complete results.json files.",
+    "checkpoints": "Retained top checkpoints are present for successful runs; non-top checkpoints were pruned by the CMA-ES harness."
+  },
+  "duration_assessment": {
+    "configured_candidate_minutes": 15.0,
+    "configured_candidate_minutes_sources": [
+      "primary protocol.md files",
+      "top-level CMA-ES logs",
+      "per-eval args.json train_minutes",
+      "corrected 1.3B launch scripts"
+    ],
+    "exact_per_eval_wallclock_verified": false,
+    "reason_exact_per_eval_wallclock_not_verified": "Per-eval stdout step lines lack timestamps, and .done files lack start/end timestamps.",
+    "complete_sweep_elapsed_hours": {
+      "redo_1300m_e97": 9.01373437497351,
+      "redo_1300m_e97_raw": 11.15292624089453,
+      "redo_1300m_gdn2": 13.874378373755349,
+      "redo_1300m_e97_linear": 8.665143682029512,
+      "ctx2k_e88_delta": 36.95879488223129,
+      "ctx2k_e88_raw": 39.782313733498256,
+      "ctx2k_fla_gdn": 46.05435635017024,
+      "ctx2k_m2rnn_home_xma": 44.982980733513834,
+      "ctx2k_transformer": 44.32708335810238
+    },
+    "conclusion": "Treat 15 minutes as the configured per-candidate budget, not an independently logged per-eval wallclock measurement. Complete corrected 1.3B sweeps span roughly 9 to 14 hours; complete older 2K sweeps span roughly 37 to 46 hours."
+  },
+  "related_racer_roots": [
+    {
+      "path": "/tmp/pile_convergence_3arch/ctx2k",
+      "accessible": true,
+      "logs": [
+        "e88.log",
+        "e88_repair_from231k.log",
+        "e88_postrepair.log",
+        "fla-gdn.log",
+        "fla-gdn_resume.log",
+        "mamba2.log",
+        "mamba2_resume.log"
+      ],
+      "note": "Long racer training logs and checkpoints, not CMA-ES generation logs."
+    },
+    {
+      "path": "/tmp/pile_convergence_m2rnn/ctx2k",
+      "accessible": true,
+      "logs": [
+        "m2rnn_tied.log",
+        "m2rnn_tied_resume.log",
+        "m2rnn_tied_resume_alloc.log",
+        "m2rnn_tied_resume_bs4.log",
+        "m2rnn_tied_resume_xma.log",
+        "m2rnn_paper.log"
+      ],
+      "note": "Long racer training logs and checkpoints, not CMA-ES generation logs."
+    },
+    {
+      "path": "/tmp/figure2_refresh_snapshot_20260529T180451Z",
+      "accessible": true,
+      "logs": [
+        "e88.log",
+        "e88_postrepair.log",
+        "fla-gdn.log",
+        "fla-gdn_resume.log",
+        "mamba2.log",
+        "mamba2_resume.log",
+        "m2rnn_tied.log",
+        "m2rnn_tied_resume_xma.log"
+      ],
+      "metadata": "snapshot_meta.json"
+    }
+  ],
+  "historical_or_diagnostic_roots": [
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_20260525",
+      "accessible": true,
+      "families": [
+        "e88",
+        "fla-gdn",
+        "m2rnn-paper",
+        "mamba2"
+      ],
+      "note": "Short-context/unanchored 1.27B attempt; protocol says not final provenance."
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_anchored_20260525",
+      "accessible": true,
+      "families": [
+        "e88",
+        "fla-gdn",
+        "m2rnn",
+        "mamba2",
+        "transformer"
+      ],
+      "note": "512-token anchored warm-start evidence with generations.jsonl but no final results.json files."
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_e88_raw_20260525",
+      "accessible": true,
+      "families": [
+        "e88-raw"
+      ],
+      "note": "512-token E88 raw-write ablation; no final results.json."
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_converge",
+      "accessible": true,
+      "families": [
+        "mamba2",
+        "fla-gdn",
+        "e88",
+        "e1",
+        "e75",
+        "e23",
+        "e42",
+        "mingru"
+      ],
+      "note": "Legacy 480M convergence sweep; candidate budget documented as about 30 minutes, not the 2K v2 15-minute protocol."
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_32k",
+      "accessible": true,
+      "families": [
+        "fla-gdn",
+        "mamba2",
+        "e88",
+        "e1h"
+      ],
+      "note": "Long-context archive, not the v2 2K burst source."
+    },
+    {
+      "path": "/home/erikg/elman/cmaes_logs",
+      "accessible": true,
+      "families": [
+        "mom_e88"
+      ],
+      "note": "Older E88-only MoM logs."
+    }
+  ],
+  "missing_or_incomplete": [
+    {
+      "path": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/protocol.md",
+      "status": "missing"
+    },
+    {
+      "path": "/home/erikg/emender/benchmark_results/cmaes_1270M_ctx2k_e97_gdn2_20260528/anchors.json",
+      "status": "missing"
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2/mamba2_20260527_183522/results.json",
+      "status": "missing"
+    },
+    {
+      "path": "/home/erikg/elman/benchmark_results/cmaes_1270M_ctx2k_baselines_warm512_20260526/mamba2/mamba2_20260527_183522/eval_157/.done",
+      "status": "missing"
+    },
+    {
+      "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/e88/e88_20260530_151323/results.json",
+      "status": "missing_at_inspection_partial_in_flight"
+    },
+    {
+      "path": "/home/erikg/emender/experiments/local/cmaes_redo_1300m_20260529/transformer/transformer_20260530_042721/results.json",
+      "status": "missing_at_inspection_partial_in_flight"
+    }
+  ]
+}
